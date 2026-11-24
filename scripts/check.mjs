@@ -63,6 +63,15 @@ const PROBE = () => {
   // Text cut off by the diagram's overflow:hidden. Measured per text node (Range), so decorative pseudo-elements
   // that are clipped on purpose (rainbow border square, gem rays) do not count.
   const clipped = [];
+  const boxOf = (el, root) => {   // nearest ancestor that draws a box (border) or clips; null if a positioned layer sits in between
+    for (let a = el; a && a !== root; a = a.parentElement) {
+      const c = getComputedStyle(a);
+      if (c.position === "absolute" || c.position === "fixed") return null;   // stamps etc. stick out on purpose
+      if (a instanceof SVGElement) return null;
+      if (c.overflowX !== "visible" || c.overflowY !== "visible" || parseFloat(c.borderTopWidth) > 0 && c.borderTopStyle !== "none" && a !== el) return a;
+    }
+    return null;
+  };
   for (const r of roots) {
     const box = r.getBoundingClientRect();
     const tw = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
@@ -72,6 +81,13 @@ const PROBE = () => {
       const b = rg.getBoundingClientRect();
       if (!b.width || !b.height) continue;   // hidden state
       if (b.right > box.right + 1 || b.left < box.left - 1) { clipped.push(`${r.id} «${n.textContent.trim().slice(0, 24)}»`); break; }
+      const host = boxOf(n.parentElement, r);
+      if (host) {
+        const hb = host.getBoundingClientRect();
+        if (b.bottom > hb.bottom + 1 || b.top < hb.top - 1 || b.right > hb.right + 1 || b.left < hb.left - 1) {
+          clipped.push(`${r.id} «${n.textContent.trim().slice(0, 24)}» outside its box`); break;
+        }
+      }
     }
   }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -104,7 +120,7 @@ async function runStates(page, where, maxH, shotFn) {
     const w = `${where} [${state}]`;
     if (maxH && r.h > maxH) fail(w, `height ${r.h}px > ${maxH}px`);
     if (r.overflowX) fail(w, "horizontal overflow");
-    if (r.clipped.length) fail(w, `text runs past the diagram edge (cut off): ${r.clipped.join(", ")}`);
+    if (r.clipped.length) fail(w, `text runs past the diagram or out of its box: ${r.clipped.join(", ")}`);
     if (r.minFont < 11.95) fail(w, `text ${r.minFont.toFixed(1)}px < 12px at ${r.minFontAt}`);
     if (r.wrapped.length) fail(w, `button/tag wraps: ${[...new Set(r.wrapped)].join(", ")}`);
     if (r.fastLoops.length) fail(w, `animation loop < 0.5s (flashing risk): ${[...new Set(r.fastLoops)].join(", ")}`);
@@ -149,13 +165,13 @@ if (!chromium) {
         await page.goto(pathToFileURL(path.resolve(file)).href);
         await page.evaluate((th) => document.documentElement.setAttribute("data-theme", th), t);
         await runStates(page, `${path.basename(file)} @${w}px ${t}`, 0);
+        if (shots) { await page.waitForTimeout(1500); await page.screenshot({ path: path.join(shots, `${target}-${w}-${t}.png`), fullPage: true }); }
         if (target === "slides") {   // the PDF is what people send around: check the print layout too
           await page.emulateMedia({ media: "print" });
           const r = await page.evaluate(PROBE);
           r.slides.forEach((s, i) => { if (s.over) fail(`${path.basename(file)} print ${t} slide ${i + 1}`, `content overflows the slide in print (${s.h}px > 720px)`); });
           await page.emulateMedia({ media: "screen" });
         }
-        if (shots) await page.screenshot({ path: path.join(shots, `${target}-${w}-${t}.png`), fullPage: true });
         await page.close();
       });
     }

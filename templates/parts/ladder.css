@@ -1,5 +1,5 @@
 /* ladder: rising steps (maturity, levels, plans); pick a step to see where you are and the next move. */
-.dd .ld-st{display:flex;align-items:flex-end;gap:6px;height:190px}
+.dd .ld-st{display:flex;align-items:flex-end;gap:6px;height:220px}
 .dd .ld-b{flex:1;cursor:pointer;border-radius:8px 8px 3px 3px;background:var(--bs);border:2px solid var(--b);transition:transform .2s}
 .dd .ld-b>.in{display:flex;flex-direction:column;padding:6px;height:100%;background:inherit;border-radius:inherit}
 .dd .ld-b:hover{transform:translateY(-5px)}

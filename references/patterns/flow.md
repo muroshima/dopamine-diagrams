@@ -27,5 +27,5 @@ Use it for linear processes: release steps, onboarding, an incident timeline.
 
 ## Limits
 
-- 3–7 steps. With more than 4 steps, phones wrap the steps into rows of three and hide the line.
+- 2–7 steps (build.py stops outside that range). With more than 4 steps, phones wrap the steps into rows of three and hide the line.
 - Print/PDF shows only the focal step's detail and highlights its circle.

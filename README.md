@@ -70,7 +70,8 @@ missing a field, uses an unknown node id, or has a value that would break the ou
 
 `check.mjs` needs Node 18+, `npm run setup` (playwright-core) and the stable Google Chrome. For Chromium or another
 Chrome build, set `CHROME_PATH=/path/to/chrome`. Without them it runs static checks only and says so.
-`--shots DIR` saves one screenshot per state at the widest and narrowest width.
+`--shots DIR` saves screenshots: for Zenn, one per state at 700px and 340px in light and dark; for standalone and
+slides, one full page per width and theme after the last click.
 
 ## Rules the effects follow
 

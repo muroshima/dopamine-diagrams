@@ -31,7 +31,7 @@ The 560px media query shows one of them.
 | `nodes[].label`, `nodes[].sub` | label yes | `sub` is a second, smaller line |
 | `edges[]` | no | `from` must be in the same or an earlier tier (edges flow forward) |
 | `edges[].label` | no | Short (≤ 10 characters). Gaps between tiers widen to fit labels |
-| `focal` | no | 1 id, at most 2 |
+| `focal` | no | One id or a list of at most 2 (build.py stops at 3) |
 | `alt` | recommended | Becomes the SVG `aria-label` |
 
 ## Limits (complexity budget)

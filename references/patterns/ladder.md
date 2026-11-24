@@ -29,4 +29,6 @@ Use it for maturity models, levels, staged rollout plans.
 
 ## Limits
 
-- 3–6 levels. Print/PDF shows the bars and the prompt.
+- 2–6 levels (build.py stops outside that range). A name must fit in two lines on its bar; build.py warns when
+  it will not (roughly ≤ 24 ASCII / 12 CJK characters with 5 levels).
+- Print/PDF shows the bars and the prompt.

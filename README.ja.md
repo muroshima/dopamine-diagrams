@@ -65,7 +65,7 @@ node scripts/check.mjs deck.html --pdf deck.pdf
 
 `build.py` は Python 3 だけで動きます（Windows では `python3` の代わりに `py`）。JSON に必須の項目がない、存在しない箱の id を指している、出力を壊す値が入っている、といった場合は、理由を表示して止まります。
 
-`check.mjs` には、Node 18 以上と、`npm run setup`（playwright-core）、Google Chrome の安定版が必要です。Chromium など別の Chrome を使う場合は、`CHROME_PATH=/path/to/chrome` を指定してください。そろっていない場合は静的な検査だけを行い、その旨を表示します。`--shots DIR` を付けると、一番広い幅と一番狭い幅で、状態ごとにスクリーンショットを保存します。
+`check.mjs` には、Node 18 以上と、`npm run setup`（playwright-core）、Google Chrome の安定版が必要です。Chromium など別の Chrome を使う場合は、`CHROME_PATH=/path/to/chrome` を指定してください。そろっていない場合は静的な検査だけを行い、その旨を表示します。`--shots DIR` を付けると、スクリーンショットを保存します。Zenn 向けは、700px と340px の幅で、ライトとダークそれぞれ状態ごとに1枚ずつ撮ります。単体 HTML とスライドは、最後のボタンを押したあとのページ全体を、幅とテーマごとに1枚撮ります。
 
 ## 演出のルール
 

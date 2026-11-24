@@ -40,6 +40,32 @@ def need(spec, *fields):
             fail(f"pattern {spec.get('pattern')}: field '{f}' is required")
 
 
+def typed(spec, field, typ, default=None, required=True):
+    """Return spec[field] if it has the expected type; stop with a message otherwise."""
+    if field not in spec or spec[field] is None:
+        if required:
+            fail(f"pattern {spec.get('pattern', '?')}: field '{field}' is required")
+        return default
+    v = spec[field]
+    ok = isinstance(v, typ) and not isinstance(v, bool)
+    if not ok:
+        tn = typ.__name__ if isinstance(typ, type) else "/".join(t.__name__ for t in typ)
+        fail(f"field '{field}' must be {tn}; got {type(v).__name__} {v!r:.40}")
+    return v
+
+
+def items_of(spec, field, item_typ, need_keys=()):
+    v = typed(spec, field, list)
+    for it in v:
+        if not isinstance(it, item_typ) or isinstance(it, bool):
+            fail(f"every item of '{field}' must be {'an object' if item_typ is dict else 'a string'}; got {it!r:.40}")
+        if item_typ is dict:
+            for k in need_keys:
+                if k not in it or not isinstance(it[k], (str, int, float)) or it[k] == "":
+                    fail(f"every item of '{field}' needs a text field '{k}'; got {it!r:.60}")
+    return v
+
+
 def as_index(v, n, name):
     if not isinstance(v, int) or isinstance(v, bool) or not 0 <= v < n:
         fail(f"{name} must be an integer from 0 to {n-1}; got {v!r}")
@@ -53,10 +79,8 @@ def text_w(s, fs):
 
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
-    need(spec, "title", "cases")
-    for c in spec["cases"]:
-        need(c, "label", "good")
-    cases = spec["cases"]
+    need(spec, "title")
+    cases = items_of(spec, "cases", dict, ("label", "good"))
     bad_l = spec.get("bad_label", "Common mistake")
     good_l = spec.get("good_label", "Do this instead")
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
@@ -85,14 +109,11 @@ def render_explorer(spec, u, lv):
 
 # ---------------------------------------------------------------- decompose
 def render_decompose(spec, u, lv):
-    need(spec, "root", "children")
-    need(spec["root"], "text")
-    for k in spec["children"]:
-        need(k, "text")
-    kids = spec["children"]
+    root = typed(spec, "root", dict)
+    need(root, "text")
+    kids = items_of(spec, "children", dict, ("text",))
     n = len(kids)
     cols = n if n <= 5 else 3
-    root = spec["root"]
     kd = "".join(f'<div class="dc-k" style="--i:{i}"><span class="dc-tag">{E(k["tag"])}</span>{E(k["text"])}</div>'
                  if k.get("tag") else f'<div class="dc-k" style="--i:{i}">{E(k["text"])}</div>'
                  for i, k in enumerate(kids))
@@ -249,20 +270,22 @@ def _arch_svg(spec, u, mode, focal):
 
 
 def render_architecture(spec, u, lv):
-    need(spec, "title", "tiers")
+    need(spec, "title")
     ids = []
-    for t in spec["tiers"]:
-        need(t, "name", "nodes")
-        for n in t["nodes"]:
-            need(n, "id", "label")
+    for t in items_of(spec, "tiers", dict, ("name",)):
+        for n in items_of(t, "nodes", dict, ("id", "label")):
             if n["id"] in ids:
                 fail(f"architecture: duplicate node id '{n['id']}'")
             ids.append(n["id"])
-    for e in spec.get("edges", []):
+    spec.setdefault("edges", [])
+    for e in items_of(spec, "edges", dict):
         for end in ("from", "to"):
             if e.get(end) not in ids:
                 fail(f"architecture: edge {end} '{e.get(end)}' is not a node id")
-    focal = set(spec.get("focal", []))
+    focal = spec.get("focal", [])
+    focal = set([focal] if isinstance(focal, str) else focal if isinstance(focal, list) else fail("architecture: focal must be an id or a list of ids"))
+    if len(focal) > 2:
+        fail("architecture: at most 2 focal nodes (emphasis budget)")
     for f in focal:
         if f not in ids:
             fail(f"architecture: focal '{f}' is not a node id")
@@ -278,7 +301,15 @@ def render_architecture(spec, u, lv):
 
 # ---------------------------------------------------------------- compare
 def render_compare(spec, u, lv):
-    need(spec, "title", "before", "after")
+    need(spec, "title")
+    for side in ("before", "after"):
+        d = typed(spec, side, dict)
+        for it in d.get("items", []) if isinstance(d.get("items", []), list) else fail(f"compare: {side}.items must be a list"):
+            if isinstance(it, dict):
+                if not isinstance(it.get("text"), (str, int, float)):
+                    fail(f"compare: every {side} item needs 'text'; got {it!r:.60}")
+            elif not isinstance(it, (str, int, float)):
+                fail(f"compare: {side} items must be strings or objects with 'text'")
     def panel(side, key, default_tone):
         d = spec[key]
         items = "".join(
@@ -304,12 +335,17 @@ def render_compare(spec, u, lv):
 
 # ---------------------------------------------------------------- loop
 def render_loop(spec, u, lv):
-    need(spec, "title", "steps")
-    steps = spec["steps"]
+    need(spec, "title")
+    steps = items_of(spec, "steps", str)
     n = len(steps)
     if not 3 <= n <= 6:
         fail(f"loop: 3 to 6 steps fit the ring; got {n}")
-    goal = spec.get("goal")
+    goal = typed(spec, "goal", str, required=False)
+    for lab in steps:
+        if text_w(lab, 16) + 20 > 140:
+            print(f"WARN: loop step '{lab}' is too long for the ring (keep it to ~12 ASCII / 7 CJK characters)", file=sys.stderr)
+    if goal and text_w(goal, 19) + 40 > 300:
+        print(f"WARN: loop goal '{goal}' is too long; it will be cut off on phones", file=sys.stderr)
     back = spec.get("back_label") if goal else None
     cx, R = 200, 118
     cy = 238 if goal else 150
@@ -346,10 +382,10 @@ def render_loop(spec, u, lv):
             lx, ly, lw = last
             top += (f'<path d="M{lx-lw/2+8:.1f} {ly-17:.1f} C {lx-lw/2-30:.1f} {ly-90:.1f}, 40 60, {cx-gw/2-4:.1f} 36" class="lp-back" marker-end="url(#{u}-ahr)"/>'
                     f'<g class="lp-lg"><line x1="40" y1="410" x2="80" y2="410" class="lp-back"/><text x="88" y="416">{E(back)}</text></g>')
-    center = spec.get("center", {})
+    center = typed(spec, "center", dict, {}, required=False)
     ct = (f'<text x="{cx}" y="{cy+2}" class="lp-ct" style="fill:url(#{gid})">{E(center.get("text", ""))}</text>'
           f'<text x="{cx}" y="{cy+24}" class="lp-cs">{E(center.get("sub", ""))}</text>') if center else ""
-    aria = E(spec.get("alt", spec["title"] + ": " + " → ".join(steps)))
+    aria = E(spec.get("alt", f'{spec["title"]}: ' + " → ".join(steps)))
     svg = (f'<svg class="lp-svg" viewBox="0 0 400 {H}" role="img" aria-label="{aria}">{defs}{top}'
            f'<circle cx="{cx}" cy="{cy}" r="{R}" class="lp-ring"/><circle cx="{cx}" cy="{cy}" r="{R}" class="lp-flow"/>'
            f'{tris}{nodes}{ct}</svg>')
@@ -358,13 +394,11 @@ def render_loop(spec, u, lv):
 
 # ---------------------------------------------------------------- flow
 def render_flow(spec, u, lv):
-    need(spec, "title", "steps")
-    for st in spec["steps"]:
-        need(st, "label")
-    steps = spec["steps"]
+    need(spec, "title")
+    steps = items_of(spec, "steps", dict, ("label",))
     n = len(steps)
-    if n < 2:
-        fail("flow: needs at least 2 steps")
+    if not 2 <= n <= 7:
+        fail(f"flow: 2 to 7 steps; got {n}")
     focal = as_index(spec.get("focal", n - 1), n, "flow: focal")
     inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
     track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}"><span class="fl-dot">{i+1}</span>'
@@ -397,19 +431,21 @@ def render_flow(spec, u, lv):
 
 # ---------------------------------------------------------------- ladder
 def render_ladder(spec, u, lv):
-    need(spec, "title", "levels")
-    for l in spec["levels"]:
-        need(l, "name")
-    lvls = spec["levels"]
-    if len(lvls) < 2:
-        fail("ladder: needs at least 2 levels")
+    need(spec, "title")
+    lvls = items_of(spec, "levels", dict, ("name",))
+    if not 2 <= len(lvls) <= 6:
+        fail(f"ladder: 2 to 6 levels; got {len(lvls)}")
+    barw = (529 - 6 * (len(lvls) - 1)) / len(lvls) - 16      # narrowest wide layout (561px embed)
+    for l in lvls:
+        if text_w(l["name"], 12) > barw * 2:
+            print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
     n = len(lvls)
     now_l = spec.get("now_label", "Now")
     next_l = spec.get("next_label", "Next move")
     inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
     bars = ""
     for i, l in enumerate(lvls):
-        h = 28 + 72 * i / max(n - 1, 1)
+        h = 34 + 66 * i / max(n - 1, 1)      # shortest bar (75px) still fits "Lv.N" + a two-line name
         top = i == n - 1 and spec.get("top_focal", True)
         bars += (f'<label for="{u}-l{i}" class="ld-b ld-b{i}{" ld-top rb" if top else ""}" style="height:{h:.0f}%">'
                  f'<span class="in"><span class="ld-n">{E(l.get("short", f"Lv.{i+1}"))}</span><span class="ld-nm">{E(l["name"])}</span></span></label>')
@@ -437,13 +473,12 @@ PR_COLORS = ["var(--b)", "#14b8a6", "#8b5cf6", "#f59e0b"]
 
 
 def render_proportion(spec, u, lv):
-    need(spec, "title", "groups")
-    groups = spec["groups"]
+    need(spec, "title")
+    groups = items_of(spec, "groups", dict, ("label",))
     for g in groups:
-        need(g, "label")
         if not isinstance(g.get("count"), int) or isinstance(g.get("count"), bool) or g["count"] < 0:
             fail(f"proportion: count of '{g['label']}' must be a non-negative integer")
-        if g.get("color") is not None and not COLOR_RE.match(str(g["color"])):
+        if g.get("color") is not None and not COLOR_RE.fullmatch(str(g["color"])):
             fail(f"proportion: color {g['color']!r} is not a plain CSS colour (#hex, name, rgb(), var(--x))")
     if groups[-1]["count"] == 0:
         fail("proportion: the last group hides the gem, so it needs at least 1 dot")
@@ -454,12 +489,13 @@ def render_proportion(spec, u, lv):
     seq = [c for g, c in zip(groups, cols) for _ in range(g["count"])]
     start_last = 99 - groups[-1]["count"]
     gem_at = as_index(spec.get("gem_at", start_last + groups[-1]["count"] // 2), 100, "proportion: gem_at")
+    gem_bg = seq[min(gem_at, len(seq) - 1)]          # hide the gem in the colour of its neighbours
     seq.insert(gem_at, "gem")
-    dots = "".join(f'<i class="pr-gem" style="--d:0s;background:#9ca3af"></i>' if c == "gem" else
+    dots = "".join(f'<i class="pr-gem" style="--d:0s;background:{gem_bg}"></i>' if c == "gem" else
                    f'<i style="--d:{(i % 10) * .03 + (i // 10) * .03:.2f}s;background:{c}"></i>' for i, c in enumerate(seq))
     lgd = "".join(f'<div class="pr-lgd"><span class="pr-sw" style="background:{c}"></span>{E(g["label"])} {g["count"] + (1 if gi == len(groups) - 1 else 0)}</div>'
                   for gi, (g, c) in enumerate(zip(groups, cols)))
-    gem = spec.get("gem", {})
+    gem = typed(spec, "gem", dict, {}, required=False)
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="pr-top"><div class="ttl">{E(spec["title"])}</div>'
             f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", "Look closer ▶"))}</span>'
@@ -496,11 +532,13 @@ RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architect
 
 # ---------------------------------------------------------------- assembly
 def build_one(spec, idx, intensity, target):
+    if not isinstance(spec, dict):
+        fail(f"spec #{idx + 1} must be a JSON object with a 'pattern' field; got {type(spec).__name__}")
     pat = spec.get("pattern")
     if pat not in RENDER:
         raise SystemExit(f"unknown pattern: {pat} (known: {', '.join(RENDER)})")
     lv = intensity or spec.get("intensity", 2)
-    if lv not in (1, 2, 3):
+    if isinstance(lv, bool) or lv not in (1, 2, 3):
         fail(f"intensity must be 1, 2 or 3; got {lv!r}")
     u = "dd" + hashlib.sha1(f"{idx}:{json.dumps(spec, sort_keys=True)}".encode()).hexdigest()[:6]
     body, state_css = RENDER[pat](spec, u, lv)

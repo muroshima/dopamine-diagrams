@@ -21,7 +21,7 @@ Use it for cycles: build–measure–learn, incident review, requirement updates
 
 | Field | Notes |
 |---|---|
-| `steps` | 3–6 short labels (≤ 12 ASCII / 7 CJK characters) |
+| `steps` | 3–6 short labels (≤ 12 ASCII / 7 CJK characters; build.py warns above that and stops outside 3–6) |
 | `goal` | Optional. Without it the ring moves up and the diagram is shorter |
 | `back_label` | Optional; needs `goal`. Draws the red return line and its legend |
 | `center` | Optional gold word and a grey line in the middle of the ring |
