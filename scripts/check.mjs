@@ -90,6 +90,16 @@ const PROBE = () => {
       }
     }
   }
+  // SVG labels must stay inside their own box (architecture / loop nodes, edge labels)
+  for (const r of roots) for (const g of r.querySelectorAll(".ar-node, .lp-node")) {
+    if (!g.getClientRects().length) continue;
+    const rb = g.querySelector("rect").getBoundingClientRect();
+    if (!rb.width) continue;
+    for (const tx of g.querySelectorAll("text")) {
+      const tb = tx.getBoundingClientRect();
+      if (tb.left < rb.left - 1 || tb.right > rb.right + 1) { clipped.push(`${r.id} «${tx.textContent.slice(0, 24)}» wider than its node`); break; }
+    }
+  }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     minFont: 99, minFontAt: "", wrapped: [], fastLoops: [], slides: [] };
   for (const el of document.querySelectorAll("body *")) {

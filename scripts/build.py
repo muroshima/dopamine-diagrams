@@ -27,7 +27,7 @@ def E(s):
     return html.escape(re.sub(r"[\r\n]+", " ", str(s)), quote=True).replace("`", "&#96;")
 
 
-COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|var\(--[a-z]+\)|[a-zA-Z]{3,20}|rgba?\([\d.,\s%]+\))$")
+COLOR_RE = re.compile(r"(#[0-9a-fA-F]{3,8}|var\(--[a-z]+\)|[a-zA-Z]{3,20}|rgba?\([ \d.,%]+\))")
 
 
 def fail(msg):
@@ -54,8 +54,10 @@ def typed(spec, field, typ, default=None, required=True):
     return v
 
 
-def items_of(spec, field, item_typ, need_keys=()):
+def items_of(spec, field, item_typ, need_keys=(), lo=1, hi=None):
     v = typed(spec, field, list)
+    if len(v) < lo or (hi is not None and len(v) > hi):
+        fail(f"'{field}' needs {lo}" + (f" to {hi}" if hi else " or more") + f" items; got {len(v)}")
     for it in v:
         if not isinstance(it, item_typ) or isinstance(it, bool):
             fail(f"every item of '{field}' must be {'an object' if item_typ is dict else 'a string'}; got {it!r:.40}")
@@ -80,7 +82,7 @@ def text_w(s, fs):
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
     need(spec, "title")
-    cases = items_of(spec, "cases", dict, ("label", "good"))
+    cases = items_of(spec, "cases", dict, ("label", "good"), lo=2, hi=8)
     bad_l = spec.get("bad_label", "Common mistake")
     good_l = spec.get("good_label", "Do this instead")
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
@@ -111,7 +113,7 @@ def render_explorer(spec, u, lv):
 def render_decompose(spec, u, lv):
     root = typed(spec, "root", dict)
     need(root, "text")
-    kids = items_of(spec, "children", dict, ("text",))
+    kids = items_of(spec, "children", dict, ("text",), lo=2, hi=6)
     n = len(kids)
     cols = n if n <= 5 else 3
     kd = "".join(f'<div class="dc-k" style="--i:{i}"><span class="dc-tag">{E(k["tag"])}</span>{E(k["text"])}</div>'
@@ -272,18 +274,22 @@ def _arch_svg(spec, u, mode, focal):
 def render_architecture(spec, u, lv):
     need(spec, "title")
     ids = []
-    for t in items_of(spec, "tiers", dict, ("name",)):
-        for n in items_of(t, "nodes", dict, ("id", "label")):
+    for t in items_of(spec, "tiers", dict, ("name",), lo=1, hi=6):
+        for n in items_of(t, "nodes", dict, ("id", "label"), lo=1, hi=4):
             if n["id"] in ids:
                 fail(f"architecture: duplicate node id '{n['id']}'")
             ids.append(n["id"])
     spec.setdefault("edges", [])
-    for e in items_of(spec, "edges", dict):
+    for e in items_of(spec, "edges", dict, lo=0):
         for end in ("from", "to"):
             if e.get(end) not in ids:
                 fail(f"architecture: edge {end} '{e.get(end)}' is not a node id")
     focal = spec.get("focal", [])
-    focal = set([focal] if isinstance(focal, str) else focal if isinstance(focal, list) else fail("architecture: focal must be an id or a list of ids"))
+    if isinstance(focal, (str, int)) and not isinstance(focal, bool):
+        focal = [focal]
+    if not isinstance(focal, list) or any(not isinstance(f, (str, int)) or isinstance(f, bool) for f in focal):
+        fail("architecture: focal must be a node id or a list of node ids")
+    focal = set(focal)
     if len(focal) > 2:
         fail("architecture: at most 2 focal nodes (emphasis budget)")
     for f in focal:
@@ -435,7 +441,7 @@ def render_ladder(spec, u, lv):
     lvls = items_of(spec, "levels", dict, ("name",))
     if not 2 <= len(lvls) <= 6:
         fail(f"ladder: 2 to 6 levels; got {len(lvls)}")
-    barw = (529 - 6 * (len(lvls) - 1)) / len(lvls) - 16      # narrowest wide layout (561px embed)
+    barw = (529 - 6 * (len(lvls) - 1)) / len(lvls) - 20      # 561px embed minus padding = 529; bar border + padding = 20
     for l in lvls:
         if text_w(l["name"], 12) > barw * 2:
             print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
@@ -474,7 +480,7 @@ PR_COLORS = ["var(--b)", "#14b8a6", "#8b5cf6", "#f59e0b"]
 
 def render_proportion(spec, u, lv):
     need(spec, "title")
-    groups = items_of(spec, "groups", dict, ("label",))
+    groups = items_of(spec, "groups", dict, ("label",), lo=1, hi=8)
     for g in groups:
         if not isinstance(g.get("count"), int) or isinstance(g.get("count"), bool) or g["count"] < 0:
             fail(f"proportion: count of '{g['label']}' must be a non-negative integer")
@@ -489,6 +495,8 @@ def render_proportion(spec, u, lv):
     seq = [c for g, c in zip(groups, cols) for _ in range(g["count"])]
     start_last = 99 - groups[-1]["count"]
     gem_at = as_index(spec.get("gem_at", start_last + groups[-1]["count"] // 2), 100, "proportion: gem_at")
+    if gem_at < start_last:   # the legend counts the gem in the last group, so it must sit there
+        fail(f"proportion: gem_at must be inside the last group ({start_last} to 99); got {gem_at}")
     gem_bg = seq[min(gem_at, len(seq) - 1)]          # hide the gem in the colour of its neighbours
     seq.insert(gem_at, "gem")
     dots = "".join(f'<i class="pr-gem" style="--d:0s;background:{gem_bg}"></i>' if c == "gem" else
@@ -538,7 +546,7 @@ def build_one(spec, idx, intensity, target):
     if pat not in RENDER:
         raise SystemExit(f"unknown pattern: {pat} (known: {', '.join(RENDER)})")
     lv = intensity or spec.get("intensity", 2)
-    if isinstance(lv, bool) or lv not in (1, 2, 3):
+    if type(lv) is not int or lv not in (1, 2, 3):
         fail(f"intensity must be 1, 2 or 3; got {lv!r}")
     u = "dd" + hashlib.sha1(f"{idx}:{json.dumps(spec, sort_keys=True)}".encode()).hexdigest()[:6]
     body, state_css = RENDER[pat](spec, u, lv)

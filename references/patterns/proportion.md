@@ -26,10 +26,10 @@ Use it for "the average hides the important case": rare but critical tickets, mi
 |---|---|
 | `groups[].count` | Must add up to **99**; the 100th dot is the gem, hidden in the last group (legend counts it there) |
 | `groups[].color` | Optional plain CSS colour (`#hex`, a name, `rgb()`, `var(--x)`); anything else is rejected. Defaults cycle blue, teal, violet, amber; the last group is grey |
-| `gem_at` | Optional dot index 0–99; default is the middle of the last group |
+| `gem_at` | Optional dot index inside the last group (build.py stops otherwise, because the legend counts the gem there); default is its middle |
 
 ## Limits
 
-- 2–5 groups read well; more turns the legend into a list nobody reads.
+- 1–8 groups are accepted; 2–5 read well; more turns the legend into a list nobody reads.
 - Say in `note` when the counts are invented.
 - Print/PDF shows the revealed state (faded dots, gold dot, explanation).

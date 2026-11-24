@@ -36,7 +36,8 @@ The 560px media query shows one of them.
 
 ## Limits (complexity budget)
 
-- ≤ 4 tiers, ≤ 3 nodes per tier, ≤ 9 nodes in total. More than that is two diagrams.
+- ≤ 4 tiers, ≤ 3 nodes per tier, ≤ 9 nodes in total. More than that is two diagrams. (build.py stops above 6
+  tiers or 4 nodes in a tier; the checker fails labels that do not fit their box.)
 - Edges between neighbouring tiers only, if they carry labels. Edges that skip a tier are drawn but their label
   may land on a box.
 - Two pairs of edges that cross (A→D and B→C) look messy; reorder nodes within a tier, or drop one edge.

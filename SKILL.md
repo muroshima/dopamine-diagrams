@@ -53,8 +53,8 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
    Tell the user when that happened; do not claim the layout was verified.
 8. **Look at the screenshots** (`--shots`: for zenn every state at 700px and 340px, light and dark; for the other
    targets the full page after the last click). The checker
-   measures overflow, cut-off text, height, text size, wrapping and loop speed; it cannot see overlaps inside an
-   SVG, empty space or ugly crossings.
+   measures overflow, cut-off text (including labels wider than their SVG box), height, text size, wrapping and
+   loop speed; it cannot see empty space, edges crossing each other or labels sitting on an edge.
 9. If the diagram summarises a source document, apply `references/citation.md` to the `note`.
 
 ## Patterns

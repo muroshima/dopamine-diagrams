@@ -33,6 +33,7 @@ on-call runbooks. If there is no "common mistake" worth showing, omit `bad`; the
 
 ## Limits
 
-- 3–8 cases. More than 8 does not fit 500px on phones; split into two diagrams.
+- 2–8 cases (build.py stops outside that range); 3 or more reads best. More than 8 does not fit 500px on
+  phones; split into two diagrams.
 - The first case is what PDF/print shows. Put the most important one first.
 - Focal point is the answer box; do not add other gold or rainbow elements.

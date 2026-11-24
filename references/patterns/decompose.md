@@ -35,5 +35,5 @@ Use it whenever the point is "this sentence cannot be built or tested until it i
 
 ## Limits
 
-- 2–6 children. Up to 5 sit in one row on wide screens; 6 becomes 3×2. Phones stack them.
+- 2–6 children (build.py stops outside that range). Up to 5 sit in one row on wide screens; 6 becomes 3×2. Phones stack them.
 - Print/PDF shows the broken-down state with the stamp, without the button.
