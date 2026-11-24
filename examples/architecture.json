@@ -1,0 +1,91 @@
+{
+  "pattern": "architecture",
+  "title": "Where does a request go?",
+  "alt": "Browser and mobile app call a CDN, which forwards to the API. The API writes to Postgres and enqueues jobs that a worker consumes.",
+  "tiers": [
+    {
+      "name": "CLIENT",
+      "nodes": [
+        {
+          "id": "web",
+          "label": "Browser",
+          "sub": "SPA"
+        },
+        {
+          "id": "app",
+          "label": "Mobile app"
+        }
+      ]
+    },
+    {
+      "name": "EDGE",
+      "nodes": [
+        {
+          "id": "cdn",
+          "label": "CDN",
+          "sub": "cache + WAF"
+        }
+      ]
+    },
+    {
+      "name": "BACKEND",
+      "nodes": [
+        {
+          "id": "api",
+          "label": "API",
+          "sub": "stateless"
+        },
+        {
+          "id": "worker",
+          "label": "Worker"
+        }
+      ]
+    },
+    {
+      "name": "DATA",
+      "nodes": [
+        {
+          "id": "db",
+          "label": "Postgres"
+        },
+        {
+          "id": "queue",
+          "label": "Queue"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "web",
+      "to": "cdn"
+    },
+    {
+      "from": "app",
+      "to": "cdn"
+    },
+    {
+      "from": "cdn",
+      "to": "api",
+      "label": "HTTPS"
+    },
+    {
+      "from": "api",
+      "to": "db",
+      "label": "SQL"
+    },
+    {
+      "from": "api",
+      "to": "queue"
+    },
+    {
+      "from": "worker",
+      "to": "queue",
+      "label": "consume"
+    }
+  ],
+  "focal": [
+    "api"
+  ],
+  "note": "Hover a box to trace its connections"
+}

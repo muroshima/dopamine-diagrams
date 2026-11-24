@@ -1,0 +1,13 @@
+{
+  "name": "dopamine-diagrams",
+  "private": true,
+  "type": "module",
+  "description": "Render checks for dopamine-diagrams (optional; uses your installed Google Chrome via playwright-core)",
+  "scripts": {
+    "setup": "npm install",
+    "check": "node scripts/check.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.48.0"
+  }
+}

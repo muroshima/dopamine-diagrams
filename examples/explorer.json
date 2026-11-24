@@ -1,0 +1,17 @@
+{
+  "pattern": "explorer",
+  "title": "The API call failed. Now what?",
+  "bad_label": "Common mistake",
+  "good_label": "Do this instead",
+  "cases": [
+    {"label": "400 Bad Request", "situation": "The request itself is wrong", "bad": "Retry the same request", "good": "Show which field is invalid and stop"},
+    {"label": "401 Unauthorized", "situation": "The token expired", "bad": "Log the user out silently", "good": "Refresh the token once, then retry"},
+    {"label": "403 Forbidden", "situation": "No permission", "bad": "Retry with backoff", "good": "Explain who can grant access"},
+    {"label": "404 Not Found", "situation": "The resource is gone", "bad": "Show a blank screen", "good": "Say it was deleted and offer a way back"},
+    {"label": "409 Conflict", "situation": "Someone else changed it", "bad": "Overwrite their change", "good": "Show both versions and let the user choose"},
+    {"label": "429 Too Many", "situation": "You are rate limited", "bad": "Retry immediately in a loop", "good": "Wait for Retry-After, then retry"},
+    {"label": "500 Server Error", "situation": "The server broke", "bad": "Show the raw stack trace", "good": "Retry with backoff and show a friendly error"},
+    {"label": "Timeout", "situation": "No answer in time", "bad": "Assume it failed and resend", "good": "Check status with an idempotency key first"}
+  ],
+  "note": "Example content for the explorer pattern"
+}
