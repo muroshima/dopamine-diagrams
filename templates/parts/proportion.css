@@ -1,0 +1,25 @@
+/* proportion: 100 dots coloured by group; one click fades the majority and lights up the one dot that matters. */
+.dd .pr-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.dd .pr-top .ttl{margin:0}
+.dd .pr-t2,.dd .pr-v2{display:none}
+.dd .pr-g{display:flex;gap:18px;align-items:center}
+.dd .pr-dots{display:grid;grid-template-columns:repeat(10,20px);gap:5px;flex:0 0 auto;position:relative}
+.dd .pr-dots i{width:20px;height:20px;border-radius:50%;display:block;position:relative;transition:opacity .4s,transform .4s;
+  transition-delay:var(--d)}
+.dd .pr-side{flex:1}
+.dd .pr-lgd{font-size:13px;display:flex;align-items:center;gap:6px}
+.dd .pr-sw{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.dd .pr-say{margin-top:10px;font-weight:800;font-size:15px}
+.dd .pr-sub{font-size:12px;color:var(--mut);margin-top:4px}
+.dd .pr-gemt{font-size:30px;display:inline-block}
+.dd .pr-v2 p{font-size:14px;margin-top:6px}
+@keyframes dd-gem{50%{box-shadow:0 0 0 6px var(--ys),0 0 26px var(--glow),0 0 48px var(--a)}}
+@media (max-width:560px){
+  .dd .pr-g{flex-direction:column}
+  .dd .pr-dots{grid-template-columns:repeat(10,15px);gap:4px}
+  .dd .pr-dots i{width:15px;height:15px}
+  .dd .ttl{font-size:14px}
+  .dd .pr-gemt{font-size:22px}
+  .dd .pr-top{margin-bottom:8px}
+  .dd .pr-v2 p{margin-top:2px}
+}

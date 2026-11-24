@@ -37,6 +37,11 @@ spent on one or two focal points. This skill keeps that rule: **one focal point,
 | `architecture` | Components in tiers, how a request flows | Light flows along edges; hover a box to light its connections |
 | `explorer` | "In situation X, do Y (not Z)" | Pick a situation; the answer stamps in |
 | `decompose` | A vague statement becoming concrete items | Click to break it down; pieces stamp in, a gold stamp lands |
+| `compare` | The habit vs. the better way | Click to flip before into after |
+| `loop` | A repeating cycle, and when to restart from the goal | Light runs round the ring |
+| `flow` | Linear steps | Light runs along the line; pick a step |
+| `ladder` | Levels, maturity, staged plans | Pick your level; the next move appears in gold |
+| `proportion` | The rare case the average hides | One click fades 99 dots and lights up the one that matters |
 
 Intensity: `1` calm (for conservative docs), `2` standard, `3` full.
 

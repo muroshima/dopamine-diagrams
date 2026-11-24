@@ -1,0 +1,19 @@
+/* ladder: rising steps (maturity, levels, plans); pick a step to see where you are and the next move. */
+.dd .ld-st{display:flex;align-items:flex-end;gap:6px;height:190px}
+.dd .ld-b{flex:1;cursor:pointer;border-radius:8px 8px 3px 3px;background:var(--bs);border:2px solid var(--b);transition:transform .2s}
+.dd .ld-b>.in{display:flex;flex-direction:column;padding:6px;height:100%;background:inherit;border-radius:inherit}
+.dd .ld-b:hover{transform:translateY(-5px)}
+.dd .ld-top>.in{background:var(--as);padding:6px}
+.dd .ld-n{font-weight:900;font-size:14px}
+.dd .ld-nm{font-size:12px;line-height:1.35}
+.dd .ld-pn{margin-top:12px;background:var(--card);border:2px solid var(--line);border-radius:10px;padding:12px;min-height:96px;font-size:14px}
+.dd .ld-p{display:none}
+.dd .ld-p0{display:block;color:var(--mut);font-weight:700}
+.dd .ld-pt{font-size:16px}
+.dd .ld-nx{margin-top:6px;font-weight:800}
+.dd .ld-nx .gold{font-size:16px;display:inline-block}
+@media (max-width:560px){
+  .dd .ld-st{height:150px}
+  .dd .ld-nm{display:none}
+  .dd .ld-n{font-size:12px}
+}

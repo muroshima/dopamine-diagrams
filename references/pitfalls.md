@@ -14,4 +14,6 @@
 | Embed height checks always fail | Measuring `documentElement.scrollHeight` returns the viewport height | Measure the bottom of the `.dd` element |
 | "Button wraps" false alarm in slides | Slides zoom the diagram 1.3×; the check compared zoomed box height with unzoomed font size | Multiply by the computed `zoom` |
 | PDF shows a half-faded or empty state | Animation never runs in print; elements started at opacity 0 | Base style is the final frame; `@media print` disables animation and shows the useful state |
+| A slide's heading disappears in the PDF | Print showed every step's detail, so the content overflowed and the centred stage pushed it up; screen checks could not see it | Print shows only the focal state; checker also renders slides with print media |
+| Gold text becomes a solid box or gets lines through it in the PDF | Chrome's PDF output mishandles `background-clip:text` and gradient-filled SVG text | `@media print` turns gold and rainbow text into solid colours |
 | Dark mode turns on in a light Zenn page | `prefers-color-scheme` followed the OS | zenn target only listens to `data-theme` |

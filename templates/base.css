@@ -79,3 +79,6 @@
 /* Motion off: reduced-motion users and print/PDF (slides). Base styles are the final frame. */
 @media (prefers-reduced-motion:reduce){.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
 @media print{.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
+/* Chrome's PDF output draws background-clipped gradient text with artefacts: print gold and the title as solid colour */
+@media print{.dd .gold{background:none!important;color:#c2410c!important;-webkit-text-stroke:0;filter:none!important}
+  .dd .ttl{background:none;color:var(--ink)}}

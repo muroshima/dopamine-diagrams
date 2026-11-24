@@ -235,7 +235,199 @@ def render_architecture(spec, u, lv):
     return body, "".join(css)
 
 
-RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architecture": render_architecture}
+# ---------------------------------------------------------------- compare
+def render_compare(spec, u, lv):
+    def panel(side, key, default_tone):
+        d = spec[key]
+        items = "".join(
+            f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}">'
+            f'{E(it["text"] if isinstance(it, dict) else it)}</div>' for it in d.get("items", []))
+        head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", side))}</span>{E(d.get("title", ""))}</div>'
+        gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
+        msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
+        return head + f'<div class="cp-items">{items}</div>' + msg
+    body = (f'<input class="h" type="checkbox" id="{u}-s">'
+            f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
+            f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", "Show the fix ▶"))}</span>'
+            f'<span class="cp-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<div class="cp-stage"><div class="cp-panel cp-before">{panel("Before", "before", "bad")}</div>'
+            f'<div class="cp-panel cp-after rb"><div class="in">{panel("After", "after", "good")}</div></div></div>')
+    s = f"#{u}-s:checked"
+    css = (f"#{u}-s:focus-visible~.cp-top .btn{{outline:2px solid var(--b);outline-offset:2px}}"
+           f"{s}~.cp-top .cp-t1,{s}~.cp-stage .cp-before{{display:none}}{s}~.cp-top .cp-t2{{display:inline}}"
+           f"{s}~.cp-stage .cp-after{{display:block;animation:var(--enter) .55s ease-out both}}"
+           f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")
+    return body, css
+
+
+# ---------------------------------------------------------------- loop
+def render_loop(spec, u, lv):
+    steps = spec["steps"]
+    n = len(steps)
+    goal = spec.get("goal")
+    back = spec.get("back_label") if goal else None
+    cx, R = 200, 118
+    cy = 238 if goal else 150
+    H = (430 if back else 390) if goal else cy + R + 34
+    gid = f"{u}-lpg"; rid = f"{u}-lpr"
+    angs = [-90 + 360 * i / n for i in range(n)]
+    nodes, tris = "", ""
+    last = None
+    for i, (lab, a) in enumerate(zip(steps, angs)):
+        x = cx + R * math.cos(math.radians(a)); y = cy + R * math.sin(math.radians(a))
+        w = text_w(lab, 16) + 20
+        nodes += (f'<g class="lp-node" style="--lpdur:{n}s"><rect x="{x-w/2:.1f}" y="{y-17:.1f}" width="{w:.1f}" height="34" rx="9" '
+                  f'style="animation-delay:{i}s"/><text x="{x:.1f}" y="{y+6:.1f}">{E(lab)}</text></g>')
+        last = (x, y, w)
+    for i in range(n):
+        a = -90 + 360 * (i + .5) / n
+        x = cx + R * math.cos(math.radians(a)); y = cy + R * math.sin(math.radians(a))
+        tris += f'<path class="lp-tri" d="M-6 -6 L6 0 L-6 6 Z" transform="translate({x:.1f} {y:.1f}) rotate({a+90:.1f})"/>'
+    defs = (f'<defs><marker id="{u}-ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
+            f'<path d="M0 0L10 5L0 10z" class="lp-ahp"/></marker>'
+            f'<marker id="{u}-ahr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">'
+            f'<path d="M0 0L10 5L0 10z" class="lp-ahr"/></marker>'
+            f'<linearGradient id="{gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff9c4"/><stop offset=".45" stop-color="#ffd700"/>'
+            f'<stop offset=".55" stop-color="#ff8f00"/><stop offset="1" stop-color="#ffe066"/></linearGradient>'
+            f'<linearGradient id="{rid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2d55"/><stop offset=".25" stop-color="#ffd700"/>'
+            f'<stop offset=".5" stop-color="#22c55e"/><stop offset=".75" stop-color="#3b82f6"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>')
+    top = ""
+    if goal:
+        gw = max(170, text_w(goal, 19) + 40)
+        top = (f'<g class="lp-goal"><rect x="{cx-gw/2:.1f}" y="14" width="{gw:.1f}" height="40" rx="10" style="stroke:url(#{rid})"/>'
+               f'<text x="{cx}" y="41" style="fill:url(#{gid})">{E(goal)}</text></g>'
+               f'<line x1="{cx}" y1="56" x2="{cx}" y2="{cy-R-20}" class="lp-down" marker-end="url(#{u}-ah)"/>')
+        if back:
+            lx, ly, lw = last
+            top += (f'<path d="M{lx-lw/2+8:.1f} {ly-17:.1f} C {lx-lw/2-30:.1f} {ly-90:.1f}, 40 60, {cx-gw/2-4:.1f} 36" class="lp-back" marker-end="url(#{u}-ahr)"/>'
+                    f'<g class="lp-lg"><line x1="40" y1="410" x2="80" y2="410" class="lp-back"/><text x="88" y="416">{E(back)}</text></g>')
+    center = spec.get("center", {})
+    ct = (f'<text x="{cx}" y="{cy+2}" class="lp-ct" style="fill:url(#{gid})">{E(center.get("text", ""))}</text>'
+          f'<text x="{cx}" y="{cy+24}" class="lp-cs">{E(center.get("sub", ""))}</text>') if center else ""
+    aria = E(spec.get("alt", spec["title"] + ": " + " → ".join(steps)))
+    svg = (f'<svg class="lp-svg" viewBox="0 0 400 {H}" role="img" aria-label="{aria}">{defs}{top}'
+           f'<circle cx="{cx}" cy="{cy}" r="{R}" class="lp-ring"/><circle cx="{cx}" cy="{cy}" r="{R}" class="lp-flow"/>'
+           f'{tris}{nodes}{ct}</svg>')
+    return f'<div class="ttl">{E(spec["title"])}</div>{svg}', ""
+
+
+# ---------------------------------------------------------------- flow
+def render_flow(spec, u, lv):
+    steps = spec["steps"]
+    n = len(steps)
+    focal = spec.get("focal", n - 1)
+    inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
+    track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}"><span class="fl-dot">{i+1}</span>'
+                    f'<span class="fl-lb">{E(st["label"])}</span></label>' for i, st in enumerate(steps))
+    pans = ""
+    for i, st in enumerate(steps):
+        inner = (f'<div class="fl-ph"><span class="gold">{i+1:02d}</span>{E(st["label"])}</div>'
+                 f'<div class="fl-tx">{E(st.get("detail", ""))}</div>')
+        if i == focal:
+            inner = f'<div class="rb"><div class="in">{inner}</div></div>'
+        pans += f'<div class="fl-p fl-p{i}">{inner}</div>'
+    body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
+            f'<div class="fl-track{" fl-many" if n > 4 else ""}">{track}</div><div class="fl-panel">{pans}</div>')
+    dot_on = ("background:var(--a);border-color:transparent;color:#fff" if lv == 1 else
+              "background:linear-gradient(180deg,#ff8a3d,#e8430c);border-color:transparent;color:#fff;animation:dd-neon var(--pulse) ease-in-out infinite")
+    css = []
+    for i in range(n):
+        sel = f"#{u}-f{i}:checked"
+        css.append(f"{sel}~.fl-track label[for={u}-f{i}] .fl-dot{{{dot_on}}}")
+        css.append(f"#{u}-f{i}:focus-visible~.fl-track label[for={u}-f{i}] .fl-dot{{outline:2px solid var(--b);outline-offset:2px}}")
+        css.append(f"{sel}~.fl-panel .fl-p{i}{{display:block;animation:pop .3s ease}}")
+        if i == focal:
+            css.append(f"{sel}~.fl-panel .fl-p{i} .rb{{animation:var(--enter) .55s ease-out both}}")
+    # PDF has no clicks and no room for every detail: print the focal step
+    css.append(f"@media print{{#{u} .fl-p{{display:none!important}}#{u} .fl-p{focal}{{display:block!important}}#{u} .fl-p .rb{{margin:0}}"
+               f"#{u} .fl-dot{{background:var(--card)!important;color:var(--b)!important;border-color:var(--b)!important}}"
+               f"#{u} .fl-focal .fl-dot{{background:var(--a)!important;color:#fff!important;border-color:var(--a)!important}}}}")
+    return body, "".join(css)
+
+
+# ---------------------------------------------------------------- ladder
+def render_ladder(spec, u, lv):
+    lvls = spec["levels"]
+    n = len(lvls)
+    now_l = spec.get("now_label", "Now")
+    next_l = spec.get("next_label", "Next move")
+    inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
+    bars = ""
+    for i, l in enumerate(lvls):
+        h = 28 + 72 * i / max(n - 1, 1)
+        top = i == n - 1 and spec.get("top_focal", True)
+        bars += (f'<label for="{u}-l{i}" class="ld-b ld-b{i}{" ld-top rb" if top else ""}" style="height:{h:.0f}%">'
+                 f'<span class="in"><span class="ld-n">{E(l.get("short", f"Lv.{i+1}"))}</span><span class="ld-nm">{E(l["name"])}</span></span></label>')
+    pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", "Where are you? Click a step"))}</div>'
+    pans += "".join(f'<div class="ld-p ld-q{i}"><b class="ld-pt">{E(l.get("short", f"Lv.{i+1}"))} {E(l["name"])}</b>'
+                    f'<div>{E(now_l)}: {E(l.get("now", ""))}</div>'
+                    f'<div class="ld-nx">{E(next_l)} ▶ <span class="gold">{E(l.get("next", ""))}</span></div></div>' for i, l in enumerate(lvls))
+    body = f'{inp}<div class="ttl">{E(spec["title"])}</div><div class="ld-st">{bars}</div><div class="ld-pn">{pans}</div>'
+    on = "background:var(--a);color:#fff" if lv == 1 else "background:linear-gradient(180deg,#ff8a3d,#e8430c);color:#fff"
+    neon = "" if lv == 1 else "animation:dd-neon var(--pulse) ease-in-out infinite;"
+    pulse = "" if lv == 1 else ",dd-goldpulse 1.8s ease-in-out .8s infinite"
+    css = []
+    for i in range(n):
+        sel = f"#{u}-l{i}:checked"
+        css.append(f"{sel}~.ld-st label[for={u}-l{i}]{{transform:translateY(-5px);{neon}}}"
+                   f"{sel}~.ld-st label[for={u}-l{i}]>.in{{{on}}}"
+                   f"#{u}-l{i}:focus-visible~.ld-st label[for={u}-l{i}]{{outline:2px solid var(--b);outline-offset:2px}}"
+                   f"{sel}~.ld-pn .ld-p0{{display:none}}{sel}~.ld-pn .ld-q{i}{{display:block;animation:pop .35s ease}}"
+                   f"{sel}~.ld-pn .ld-q{i} .gold{{animation:var(--enter) .55s ease-out .2s both{pulse}}}")
+    return body, "".join(css)
+
+
+# ---------------------------------------------------------------- proportion
+PR_COLORS = ["var(--b)", "#14b8a6", "#8b5cf6", "#f59e0b"]
+
+
+def render_proportion(spec, u, lv):
+    groups = spec["groups"]
+    total = sum(g["count"] for g in groups)
+    if total != 99:
+        raise SystemExit(f"proportion: group counts must add up to 99 (the 100th dot is the gem); got {total}")
+    cols = [g.get("color") or (PR_COLORS[i] if i < len(groups) - 1 else "#9ca3af") for i, g in enumerate(groups)]
+    seq = [c for g, c in zip(groups, cols) for _ in range(g["count"])]
+    start_last = 99 - groups[-1]["count"]
+    gem_at = spec.get("gem_at", start_last + groups[-1]["count"] // 2)
+    seq.insert(gem_at, "gem")
+    dots = "".join(f'<i class="pr-gem" style="--d:0s;background:#9ca3af"></i>' if c == "gem" else
+                   f'<i style="--d:{(i % 10) * .03 + (i // 10) * .03:.2f}s;background:{c}"></i>' for i, c in enumerate(seq))
+    lgd = "".join(f'<div class="pr-lgd"><span class="pr-sw" style="background:{c}"></span>{E(g["label"])} {g["count"] + (1 if gi == len(groups) - 1 else 0)}</div>'
+                  for gi, (g, c) in enumerate(zip(groups, cols)))
+    gem = spec.get("gem", {})
+    body = (f'<input class="h" type="checkbox" id="{u}-s">'
+            f'<div class="pr-top"><div class="ttl">{E(spec["title"])}</div>'
+            f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", "Look closer ▶"))}</span>'
+            f'<span class="pr-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<div class="pr-g"><div class="pr-dots">{dots}</div><div class="pr-side">'
+            f'<div class="pr-v1">{lgd}<p class="pr-say">{E(spec.get("say", ""))}</p><p class="pr-sub">{E(spec.get("say_sub", ""))}</p></div>'
+            f'<div class="pr-v2"><div class="pr-gemt gold">{E(gem.get("title", "The one that matters"))}</div>'
+            f'<p>{E(gem.get("text", ""))}</p><p class="pr-sub">{E(gem.get("sub", ""))}</p></div></div></div>')
+    s = f"#{u}-s:checked"
+    glow = ("box-shadow:0 0 0 3px var(--ys),0 0 16px var(--glow),0 0 32px var(--a);animation:dd-gem 1.4s ease-in-out infinite;"
+            if lv > 1 else "box-shadow:0 0 0 3px var(--a);")
+    css = (f"#{u}-s:focus-visible~.pr-top .btn{{outline:2px solid var(--b);outline-offset:2px}}"
+           f"{s}~.pr-top .pr-t1,{s}~.pr-g .pr-v1{{display:none}}{s}~.pr-top .pr-t2{{display:inline}}"
+           f"{s}~.pr-g .pr-v2{{display:block}}"
+           f"{s}~.pr-g .pr-v2 .pr-gemt{{animation:var(--enter) .6s ease-out .3s both{'' if lv == 1 else ',dd-goldpulse 1.8s ease-in-out 1s infinite'}}}"
+           f"{s}~.pr-g .pr-v2 p{{animation:pop .4s ease .6s both}}"
+           f"{s}~.pr-g .pr-dots i{{opacity:.15;transform:scale(.75)}}"
+           f"{s}~.pr-g .pr-dots .pr-gem{{opacity:1;transform:scale(1.4);background:radial-gradient(circle at 35% 30%,#fffde7,#ffd700 45%,#ff8f00)!important;"
+           f"{glow}transition-delay:0s;z-index:2}}")
+    if lv > 1:
+        css += (f"{s}~.pr-g .pr-dots .pr-gem::before{{content:'';position:absolute;left:50%;top:50%;width:110px;height:110px;margin:-55px 0 0 -55px;"
+                f"border-radius:50%;background:repeating-conic-gradient(rgba(255,215,0,.55) 0 10deg,transparent 10deg 30deg);"
+                f"-webkit-mask:radial-gradient(circle,#000 20%,transparent 70%);mask:radial-gradient(circle,#000 20%,transparent 70%);"
+                f"animation:dd-spin 6s linear infinite;z-index:-1}}")
+    css += (f"@media print{{#{u} .pr-dots i{{opacity:.15}}#{u} .pr-dots .pr-gem{{opacity:1;transform:scale(1.4);background:#ffd700!important}}"
+            f"#{u} .pr-v2{{display:block}}#{u} .pr-v1 .pr-say,#{u} .pr-v1 .pr-sub,#{u} .pr-top .btn{{display:none}}}}")
+    return body, css
+
+
+RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architecture": render_architecture,
+          "compare": render_compare, "loop": render_loop, "flow": render_flow, "ladder": render_ladder,
+          "proportion": render_proportion}
 
 
 # ---------------------------------------------------------------- assembly
@@ -314,7 +506,7 @@ def main():
                      "[data-theme=dark] .slide h2{color:#e6edf3}"
                      "@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .slide h2{color:#e6edf3}}"
                      ".stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}"
-                     ".slide .dd{width:100%;max-width:860px;zoom:1.3}.slide .dd>.ttl{display:none}"
+                     ".slide .dd{width:100%;max-width:860px;zoom:1.3}.slide .dd .ttl{display:none}"
                      "@media screen{body{background:#52525b}.slide{margin:16px auto;background:#f4f4f5}"
                      "[data-theme=dark] .slide{background:#0d1117}"
                      "@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .slide{background:#0d1117}}}")

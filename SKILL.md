@@ -1,6 +1,6 @@
 ---
 name: dopamine-diagrams
-description: Build attention-grabbing, interactive explainer diagrams (architecture, case explorers, "vague requirement → concrete pieces" breakdowns) with game-show effects — flowing rainbow titles, gold text, rainbow borders that run around the focal box, neon pulses, stamp-in reveals — in pure HTML + CSS. One JSON spec builds to a Zenn html-embed block (no JavaScript), a standalone HTML page, or a 16:9 slide deck that prints to PDF. Includes a render checker that clicks every state at every width. Use when someone wants a diagram that people will actually stop and look at, for readers with short attention spans ("ドパガキ"), for Zenn articles, blog posts, or slides.
+description: Build attention-grabbing, interactive explainer diagrams (architecture, flows, cycles, before/after, maturity ladders, case explorers, breakdowns, "the one dot that matters") with game-show effects — flowing rainbow titles, gold text, rainbow borders that run around the focal box, neon pulses, stamp-in reveals — in pure HTML + CSS. One JSON spec builds to a Zenn html-embed block (no JavaScript), a standalone HTML page, or a 16:9 slide deck that prints to PDF. Includes a render checker that clicks every state at every width. Use when someone wants a diagram that people will actually stop and look at, for readers with short attention spans ("ドパガキ"), for Zenn articles, blog posts, or slides.
 license: MIT
 ---
 
@@ -60,16 +60,21 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
 | Components and how a request flows between them | `architecture` | Flow animates along edges; hover a box to light its connections |
 | "In situation X, do Y (not Z)" for several situations | `explorer` | Pick a situation; the answer stamps in inside a rainbow border |
 | A vague statement that must become concrete items | `decompose` | Click to split it; pieces stamp in one by one; a gold "done" stamp lands |
+| The habit vs. the better way | `compare` | Click to flip "before" into "after" inside a rainbow border |
+| A cycle that repeats (and when to restart from the goal) | `loop` | Light runs round the ring; steps light up in turn |
+| Linear steps | `flow` | Light runs along the line; pick a step to read it; the focal step sits in a rainbow border |
+| Levels / maturity / staged plans | `ladder` | Pick your level; "now" and a gold "next move" appear |
+| The rare case the average hides | `proportion` | 100 dots; one click fades the majority and lights up the one that matters |
 
-More patterns (flow, loop, compare, ladder, proportion) are planned; until then, compose from `base.css`
-primitives and run the checker.
+Nothing fits? Compose from the `base.css` primitives, then run the checker.
 
 ## Emphasis budget
 
 The effects only work when most of the diagram is calm.
 
 - **One or two focal elements per diagram.** Gold text, rainbow border and neon go there and nowhere else.
-  In `architecture`, list them in `focal`. In `explorer` and `decompose` the answer area is already the focal point.
+  In `architecture`, list them in `focal`; in `flow`, set `focal` to one step. In the other patterns the answer
+  area (or the top level, or the gem) is already the focal point.
 - **Intensity** (`--intensity` or `"intensity"` in the spec):
   - `1` calm: plain title, accent-colour border, soft entrance. For internal docs and conservative decks.
   - `2` standard (default): rainbow title, gold, neon, stamps, rainbow border.

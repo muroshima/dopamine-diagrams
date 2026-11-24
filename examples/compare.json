@@ -1,0 +1,23 @@
+{
+  "pattern": "compare",
+  "title": "Does every request need sign-off?",
+  "button": "Question the habit ▶",
+  "back": "Back",
+  "before": {
+    "label": "Before", "title": "Everything waits for the manager",
+    "items": ["Routine renewal", "Small office purchase", "New vendor", "Large contract"],
+    "message": "\"It always needed approval\" is copied into the new system as is"
+  },
+  "after": {
+    "label": "After", "title": "Route by risk",
+    "items": [
+      {"text": "Routine renewal → automatic", "tone": "good"},
+      {"text": "Small purchase → automatic", "tone": "good"},
+      {"text": "New vendor → manager", "tone": "neutral"},
+      {"text": "Large contract → manager", "tone": "neutral"}
+    ],
+    "headline": "Half the queue gone",
+    "message": "Ask whether the decision is needed at all; if it is, scale it to the risk"
+  },
+  "note": "Example content for the compare pattern"
+}

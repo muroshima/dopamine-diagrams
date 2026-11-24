@@ -1,0 +1,23 @@
+/* compare: a "before" state flips to an "after" state on click. */
+.dd .cp-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dd .cp-top .ttl{margin:0}
+.dd .cp-t2,.dd .cp-after{display:none}
+.dd .cp-panel{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px}
+.dd .cp-before{border-color:var(--r)}
+.dd .cp-after{border-radius:14px}
+.dd .cp-head{font-weight:900;font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dd .cp-badge{font-size:12px;font-weight:800;border-radius:999px;padding:1px 10px;color:#fff;background:var(--r)}
+.dd .cp-after .cp-badge{background:var(--g)}
+.dd .cp-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.dd .cp-item{padding:7px 10px;border-radius:8px;font-size:13px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mut)}
+.dd .cp-item.bad{border-left-color:var(--r)}
+.dd .cp-item.good{border-left-color:var(--g)}
+.dd .cp-item.good{box-shadow:0 0 8px rgba(34,197,94,.3)}
+.dd .cp-msg{margin-top:10px;padding:8px 12px;border-radius:8px;font-size:13px;background:var(--rs)}
+.dd .cp-after .cp-msg{background:var(--gs)}
+.dd .cp-msg .gold{font-size:16px;margin-right:6px;display:inline-block}
+@media (max-width:560px){
+  .dd .cp-top .ttl{font-size:14px}
+  .dd .cp-items{grid-template-columns:1fr 1fr}
+  .dd .cp-item{padding:5px 8px;font-size:12.5px}
+}

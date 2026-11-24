@@ -1,0 +1,28 @@
+/* loop: steps on a ring with light flowing round; optional goal above with a dashed "go back to the top" line. */
+.dd .lp-svg{display:block;width:100%;max-width:360px;margin:0 auto;overflow:visible}
+.dd .lp-svg text{text-anchor:middle;fill:var(--ink);font-family:inherit}
+.dd .lp-goal rect{fill:var(--card);stroke-width:6;animation:dd-goalglow 1.8s ease-in-out infinite}
+@keyframes dd-goalglow{0%,100%{filter:drop-shadow(0 0 2px var(--glow))}50%{filter:drop-shadow(0 0 10px var(--glow))}}
+.dd .lp-goal text{font-weight:900;font-size:19px;stroke:#7c2d12;stroke-width:2.4px;paint-order:stroke}
+.dd .lp-down{stroke:var(--mut);stroke-width:2}
+.dd .lp-ahp{fill:var(--mut)}.dd .lp-ahr{fill:var(--r)}
+.dd .lp-ring{fill:none;stroke:var(--line);stroke-width:10}
+.dd .lp-flow{fill:none;stroke:var(--glow);stroke-width:5;stroke-linecap:round;stroke-dasharray:14 22;animation:dd-lpflow 1.8s linear infinite}
+@keyframes dd-lpflow{to{stroke-dashoffset:-72}}
+.dd .lp-tri{fill:var(--a)}
+.dd .lp-node rect{fill:var(--card);stroke:var(--b);stroke-width:2;animation:dd-lplit var(--lpdur) linear infinite}
+.dd .lp-node text{font-size:16px;font-weight:700}
+@keyframes dd-lplit{0%{stroke:var(--glow);stroke-width:3.5px;filter:drop-shadow(0 0 8px var(--glow))}
+  18%,100%{stroke:var(--b);stroke-width:2px;filter:none}}
+.dd .lp-back{fill:none;stroke:var(--r);stroke-width:2.5;stroke-dasharray:6 5;animation:dd-lpback 1s linear infinite}
+@keyframes dd-lpback{to{stroke-dashoffset:-22}}
+.dd .lp-ct{font-weight:900;font-size:24px;stroke:#7c2d12;stroke-width:2.6px;paint-order:stroke}
+.dd .lp-cs{font-size:16px;fill:var(--mut)!important}
+.dd .lp-lg text{text-anchor:start;font-size:16px;fill:var(--r)!important}
+.dd.lv1 .lp-goal rect{stroke:var(--a)!important;animation:none}
+.dd.lv1 .lp-goal text,.dd.lv1 .lp-ct{stroke:none;fill:var(--a)!important}
+.dd.lv1 .lp-node rect{animation:none}
+.dd.lv1 .lp-flow{stroke:var(--a)}
+@media (max-width:560px){.dd .ttl{font-size:14px}}
+/* gradient-filled SVG text prints as a solid box in Chrome PDFs */
+@media print{.dd .lp-goal text,.dd .lp-ct{fill:#c2410c!important;stroke:none}}

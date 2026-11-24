@@ -1,0 +1,15 @@
+{
+  "pattern": "proportion",
+  "title": "100 support tickets, summarised by AI",
+  "button": "Read them yourself ▶",
+  "back": "Back to the summary",
+  "groups": [
+    {"label": "Password reset", "count": 40},
+    {"label": "Billing question", "count": 32},
+    {"label": "Other", "count": 27}
+  ],
+  "say": "AI: \"Fix password reset and billing first\"",
+  "say_sub": "Counting the majority is what AI does well",
+  "gem": {"title": "The one that matters", "text": "One ticket filed under \"Other\" was the first sign of a data leak", "sub": "Deciding what matters still needs someone who knows the domain"},
+  "note": "Counts are illustrative"
+}

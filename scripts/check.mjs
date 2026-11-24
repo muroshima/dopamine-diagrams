@@ -124,6 +124,12 @@ if (!chromium) {
         await page.goto(pathToFileURL(path.resolve(file)).href);
         await page.evaluate((th) => document.documentElement.setAttribute("data-theme", th), t);
         await runStates(page, `${path.basename(file)} @${w}px ${t}`, 0);
+        if (target === "slides") {   // the PDF is what people send around: check the print layout too
+          await page.emulateMedia({ media: "print" });
+          const r = await page.evaluate(PROBE);
+          r.slides.forEach((s, i) => { if (s.over) fail(`${path.basename(file)} print ${t} slide ${i + 1}`, `content overflows the slide in print (${s.h}px > 720px)`); });
+          await page.emulateMedia({ media: "screen" });
+        }
         if (shots) await page.screenshot({ path: path.join(shots, `${target}-${w}-${t}.png`), fullPage: true });
         await page.close();
       });
