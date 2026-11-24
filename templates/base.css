@@ -1,0 +1,84 @@
+/* dopamine-diagrams base: tokens, light/dark, effect primitives, intensity levels.
+   Every diagram root is <div class="dd lvN">. Patterns add their own CSS on top. */
+
+.dd{
+  --bg:#fffaf3; --ink:#1f2328; --mut:#5b636e; --line:#e3d9cc; --card:#ffffff;
+  --a:#ea580c; --as:#ffedd5; --b:#2563eb; --bs:#dbeafe; --g:#15803d; --gs:#dcfce7;
+  --r:#dc2626; --rs:#fee2e2; --y:#ca8a04; --ys:#fef9c3; --v:#7c3aed; --glow:#ffb300;
+  --enter:stamp; --spin:1.8s; --pulse:1.6s;
+  font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
+  color:var(--ink); background:var(--bg); padding:16px; font-size:14px; line-height:1.6;
+  border-radius:12px; overflow:hidden; position:relative;
+}
+/*DARK*/
+.dd *,.dd *::before,.dd *::after{box-sizing:border-box;margin:0}
+.dd input.h{position:absolute;opacity:0;pointer-events:none}
+.dd .note{font-size:12px;color:var(--mut);margin-top:10px}
+
+/* Title: slowly flowing rainbow text */
+.dd .ttl{font-weight:900;font-size:16px;margin-bottom:10px;display:inline-block;
+  background:linear-gradient(90deg,#e11d48,#ea580c,#d97706,#16a34a,#0891b2,#2563eb,#9333ea,#e11d48);
+  background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:dd-rainbow 5s linear infinite}
+@keyframes dd-rainbow{to{background-position:200% 0}}
+
+/* Gold text (focal words). color:transparent is repeated on purpose: pattern rules that set
+   color on a parent selector must not win (pitfall: gold turned grey). */
+.dd .gold{font-weight:900;color:transparent!important;
+  background:linear-gradient(180deg,#fff9c4 0%,#ffd700 42%,#ff8f00 52%,#ffe066 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-stroke:1px #7c2d12;
+  filter:drop-shadow(0 1px 0 #7c2d12) drop-shadow(0 0 6px var(--glow));
+  animation:dd-goldpulse 1.8s ease-in-out infinite}
+@keyframes dd-goldpulse{0%,100%{filter:drop-shadow(0 1px 0 #7c2d12) drop-shadow(0 0 4px var(--glow))}
+  50%{filter:drop-shadow(0 1px 0 #7c2d12) drop-shadow(0 0 14px var(--glow))}}
+
+/* A band of light sweeping across (buttons, warning strips) */
+.dd .shine{position:relative;overflow:hidden}
+.dd .shine::after{content:"";position:absolute;top:-10%;left:-70%;width:45%;height:120%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.8),transparent);transform:skewX(-20deg);
+  animation:dd-sweep 3s ease-in-out infinite}
+@keyframes dd-sweep{0%{left:-70%}55%,100%{left:140%}}
+
+/* Neon pulse (selected / focal boxes) */
+.dd .neon{animation:dd-neon var(--pulse) ease-in-out infinite}
+@keyframes dd-neon{0%,100%{box-shadow:0 0 3px var(--glow),0 0 8px var(--glow)}
+  50%{box-shadow:0 0 8px var(--glow),0 0 22px var(--glow),0 0 36px var(--a)}}
+
+/* Rainbow light running around a border. Wrap content in <div class="in">.
+   The pseudo-element is a huge square so wide boxes never show a gap (pitfall). */
+.dd .rb{position:relative;overflow:hidden;border:none!important;padding:6px!important;
+  background:transparent!important;isolation:isolate;box-shadow:0 0 14px rgba(255,140,0,.45)}
+.dd .rb::before{content:"";position:absolute;left:50%;top:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px;z-index:-2;
+  background:conic-gradient(#ff2d55,#ff9500,#ffd700,#22c55e,#06b6d4,#3b82f6,#a855f7,#ff2d55);
+  animation:dd-spin var(--spin) linear infinite}
+.dd .rb>.in{background:var(--card);border-radius:inherit;height:100%;padding:10px;position:relative}
+@keyframes dd-spin{to{transform:rotate(360deg)}}
+
+/* Entrances */
+@keyframes stamp{0%{opacity:0;transform:scale(2.2) rotate(-8deg)}55%{opacity:1;transform:scale(.92) rotate(2deg)}100%{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Buttons are <label for=...> bound to hidden checkbox/radio inputs */
+.dd .btn{cursor:pointer;color:#fff;border-radius:999px;padding:7px 16px;font-size:13px;font-weight:800;display:inline-block;
+  background:linear-gradient(180deg,#ff8a3d,#e8430c);box-shadow:0 3px 0 #9a3412,0 0 12px rgba(255,140,0,.55);
+  text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.dd .btn:hover{transform:translateY(1px);box-shadow:0 2px 0 #9a3412,0 0 18px rgba(255,140,0,.8)}
+.dd .chip-on{background:linear-gradient(180deg,#ff8a3d,#e8430c)!important;border-color:transparent!important;color:#fff!important;
+  animation:dd-neon var(--pulse) ease-in-out infinite}
+
+/* ---- Intensity: lv1 calm / lv2 standard / lv3 full ---- */
+.dd.lv1{--enter:pop}
+.dd.lv1 .ttl{background:none;color:var(--ink);animation:none}
+.dd.lv1 .gold{color:var(--a)!important;background:none;-webkit-text-stroke:0;filter:none;animation:none}
+.dd.lv1 .shine::after{display:none}
+.dd.lv1 .neon,.dd.lv1 .chip-on{animation:none;box-shadow:0 0 0 2px var(--glow)}
+.dd.lv1 .rb{box-shadow:none}
+.dd.lv1 .rb::before{animation:none;background:var(--a)}
+.dd.lv3{--spin:1.2s;--pulse:1.2s}
+
+/* Motion off: reduced-motion users and print/PDF (slides). Base styles are the final frame. */
+@media (prefers-reduced-motion:reduce){.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
+@media print{.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
+/* Chrome's PDF output draws background-clipped gradient text with artefacts: print gold and the title as solid colour */
+@media print{.dd .gold{background:none!important;color:#c2410c!important;-webkit-text-stroke:0;filter:none!important}
+  .dd .ttl{background:none;color:var(--ink)}}

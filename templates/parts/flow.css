@@ -1,0 +1,28 @@
+/* flow: numbered steps on a line with light running along it; pick a step to read its detail. */
+.dd .fl-track{position:relative;display:flex;justify-content:space-between;gap:6px;margin:6px 0 12px}
+.dd .fl-track::before{content:"";position:absolute;left:28px;right:28px;top:20px;height:4px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,var(--glow) 0 14px,transparent 14px 26px);animation:dd-fldash 1.2s linear infinite}
+@keyframes dd-fldash{to{background-position:26px 0}}
+.dd .fl-step{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+  text-align:center;min-width:0;transition:transform .15s}
+.dd .fl-step:hover{transform:translateY(-2px)}
+.dd .fl-dot{width:44px;height:44px;border-radius:50%;background:var(--card);border:3px solid var(--b);display:flex;
+  align-items:center;justify-content:center;font-weight:900;font-size:15px;color:var(--b)}
+.dd .fl-focal .fl-dot{border-color:var(--a);color:var(--a)}
+.dd .fl-lb{font-size:12.5px;font-weight:700;line-height:1.3;overflow-wrap:anywhere}
+.dd .fl-panel{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px 14px;min-height:100px}
+.dd .fl-p{display:none}
+.dd .fl-ph{font-weight:900;font-size:16px;margin-bottom:4px;display:flex;align-items:baseline;gap:8px}
+.dd .fl-ph .gold{font-size:22px}
+.dd .fl-tx{font-size:14px}
+.dd .fl-p .rb{border-radius:12px;margin:-4px}
+.dd.lv1 .fl-track::before{animation:none;background:var(--line)}
+@media (max-width:560px){
+  .dd .ttl{font-size:14px}
+  .dd .fl-many{flex-wrap:wrap;justify-content:center;row-gap:8px}
+  .dd .fl-many .fl-step{flex:0 0 31%}
+  .dd .fl-many::before{display:none}
+  .dd .fl-dot{width:36px;height:36px;font-size:13px}
+  .dd .fl-track::before{top:16px}
+  .dd .fl-panel{padding:10px;min-height:0}
+}

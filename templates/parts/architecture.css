@@ -1,0 +1,32 @@
+/* architecture: tiers of nodes with glowing request flow. Two SVGs: wide (tiers as columns) and
+   narrow (tiers as rows); the media query shows one. Hover a node to light up its edges (:has). */
+.dd .ar-svg{display:block;width:100%;margin:0 auto;overflow:visible}
+.dd .ar-narrow{display:none;max-width:320px}
+.dd .ar-svg text{font-family:inherit;fill:var(--ink);text-anchor:middle}
+.dd .ar-tier{font-weight:800;fill:var(--mut)!important;letter-spacing:.04em}
+.dd .ar-band{fill:var(--card);opacity:.55;stroke:var(--line);stroke-dasharray:4 4}
+.dd .ar-node rect{fill:var(--card);stroke:var(--b);stroke-width:2}
+.dd .ar-node .lb{font-weight:800}
+.dd .ar-node .sb{fill:var(--mut)}
+/* font sizes come from build.py as CSS variables on each <svg> (see the >= 12px rule there) */
+.dd .ar-svg .ar-tier{font-size:var(--fss)}.dd .ar-svg .lb{font-size:var(--fs)}.dd .ar-svg .sb{font-size:var(--fss)}.dd .ar-svg .ar-elabel{font-size:var(--fse)}
+.dd .ar-node{cursor:default;transition:opacity .2s}
+.dd .ar-base{fill:none;stroke:var(--line);stroke-width:4}
+.dd .ar-flow{fill:none;stroke:var(--glow);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:10 16;
+  animation:dd-flow 1.6s linear infinite}
+@keyframes dd-flow{to{stroke-dashoffset:-52}}
+.dd .ar-elabel{fill:var(--mut)}
+.dd .ar-elabel-bg{fill:var(--bg)}
+.dd .ar-ed{transition:opacity .2s}
+.dd .ar-focal rect{stroke-width:4;animation:dd-nodeglow 1.6s ease-in-out infinite}
+.dd .ar-focal .lb{font-weight:900}
+@keyframes dd-nodeglow{0%,100%{filter:drop-shadow(0 0 2px var(--glow))}50%{filter:drop-shadow(0 0 10px var(--glow))}}
+.dd.lv1 .ar-focal rect{stroke:var(--a)!important;animation:none}
+.dd.lv1 .ar-flow{stroke:var(--a);animation-duration:2.4s}
+.dd.lv3 .ar-flow{stroke-width:4.5;filter:drop-shadow(0 0 4px var(--glow))}
+.dd .ar-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:6px}
+@media (max-width:560px){
+  .dd .ar-wide{display:none}
+  .dd .ar-narrow{display:block}
+  .dd .ttl{font-size:14px}
+}
