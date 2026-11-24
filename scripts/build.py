@@ -22,14 +22,28 @@ CHIP_ON = ("background:linear-gradient(180deg,#ff8a3d,#e8430c);border-color:tran
            "animation:dd-neon var(--pulse) ease-in-out infinite")
 CHIP_ON_LV1 = "background:var(--a);border-color:transparent;color:#fff"
 
-E = lambda s: html.escape(str(s), quote=True)
+def E(s):
+    """Escape user text for HTML. Newlines become spaces (a newline + ``` would close the Zenn fence)."""
+    return html.escape(re.sub(r"[\r\n]+", " ", str(s)), quote=True).replace("`", "&#96;")
 
 
-def slug(s):
-    s = re.sub(r"[^A-Za-z0-9_-]", "-", str(s))
-    if not re.match(r"[A-Za-z_]", s):
-        s = "n" + s
-    return s
+COLOR_RE = re.compile(r"^(#[0-9a-fA-F]{3,8}|var\(--[a-z]+\)|[a-zA-Z]{3,20}|rgba?\([\d.,\s%]+\))$")
+
+
+def fail(msg):
+    raise SystemExit(f"error: {msg}")
+
+
+def need(spec, *fields):
+    for f in fields:
+        if f not in spec or spec[f] in ("", None, [], {}):
+            fail(f"pattern {spec.get('pattern')}: field '{f}' is required")
+
+
+def as_index(v, n, name):
+    if not isinstance(v, int) or isinstance(v, bool) or not 0 <= v < n:
+        fail(f"{name} must be an integer from 0 to {n-1}; got {v!r}")
+    return v
 
 
 def text_w(s, fs):
@@ -39,6 +53,9 @@ def text_w(s, fs):
 
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
+    need(spec, "title", "cases")
+    for c in spec["cases"]:
+        need(c, "label", "good")
     cases = spec["cases"]
     bad_l = spec.get("bad_label", "Common mistake")
     good_l = spec.get("good_label", "Do this instead")
@@ -68,6 +85,10 @@ def render_explorer(spec, u, lv):
 
 # ---------------------------------------------------------------- decompose
 def render_decompose(spec, u, lv):
+    need(spec, "root", "children")
+    need(spec["root"], "text")
+    for k in spec["children"]:
+        need(k, "text")
     kids = spec["children"]
     n = len(kids)
     cols = n if n <= 5 else 3
@@ -110,6 +131,7 @@ def _arch_svg(spec, u, mode, focal):
     pos = {}   # id -> (cx, cy, w, h, tier)
     out = []
     tid = {n["id"]: ti for ti, t in enumerate(tiers) for n in t["nodes"]}
+    idx = {n["id"]: i for i, n in enumerate(n for t in tiers for n in t["nodes"])}   # class names use indices, never ids
     if mode == "wide":
         # Column widths come from the node text, gaps from the edge labels between neighbouring tiers.
         # If that needs more than 600 user units, the viewBox widens and every font grows with it, so text
@@ -160,7 +182,11 @@ def _arch_svg(spec, u, mode, focal):
             cy = y + 22 + nh / 2
             for ni, n in enumerate(t["nodes"]):
                 cx = W * (ni + .5) / k
-                w = min(W / k - 12, max(text_w(n["label"], FS) + 24, text_w(n.get("sub", ""), FSS) + 16))
+                want = max(text_w(n["label"], FS) + 24, text_w(n.get("sub", ""), FSS) + 16)
+                w = min(W / k - 12, want)
+                if want > w + 1:
+                    print(f"WARN: architecture node '{n['id']}' is too long for the phone layout "
+                          f"({k} nodes in its tier); shorten the label/sub or move a node to another tier", file=sys.stderr)
                 pos[n["id"]] = (cx, cy, w, nh, ti)
             y += bh + rowgap
         H = y - rowgap + 4
@@ -197,13 +223,13 @@ def _arch_svg(spec, u, mode, focal):
             lw = text_w(e["label"], FSE) + 10
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
-        eds.append(f'<g class="ar-ed x-{slug(e["from"])} x-{slug(e["to"])}"><path class="ar-base" d="{d}"/>'
+        eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():
         n = next(n for t in tiers for n in t["nodes"] if n["id"] == nid)
-        cls = f"ar-node n-{slug(nid)} " + " ".join(f"nb-{slug(x)}" for x in nb[nid])
+        cls = f"ar-node n-{idx[nid]} " + " ".join(f"nb-{i}" for i in sorted(idx[x] for x in nb[nid]))
         style = ""
         if nid in focal:
             cls += " ar-focal"; style = f' style="stroke:url(#{gid})"'
@@ -223,13 +249,28 @@ def _arch_svg(spec, u, mode, focal):
 
 
 def render_architecture(spec, u, lv):
+    need(spec, "title", "tiers")
+    ids = []
+    for t in spec["tiers"]:
+        need(t, "name", "nodes")
+        for n in t["nodes"]:
+            need(n, "id", "label")
+            if n["id"] in ids:
+                fail(f"architecture: duplicate node id '{n['id']}'")
+            ids.append(n["id"])
+    for e in spec.get("edges", []):
+        for end in ("from", "to"):
+            if e.get(end) not in ids:
+                fail(f"architecture: edge {end} '{e.get(end)}' is not a node id")
     focal = set(spec.get("focal", []))
-    wide, ids = _arch_svg(spec, u, "wide", focal)
+    for f in focal:
+        if f not in ids:
+            fail(f"architecture: focal '{f}' is not a node id")
+    wide, _ = _arch_svg(spec, u, "wide", focal)
     narrow, _ = _arch_svg(spec, u, "narrow", focal)
     body = f'<div class="ttl">{E(spec["title"])}</div>{wide}{narrow}'
     css = []
-    for nid in ids:
-        s = slug(nid)
+    for s in range(len(ids)):
         css.append(f"#{u} svg:has(.n-{s}:hover) .ar-ed:not(.x-{s}){{opacity:.15}}"
                    f"#{u} svg:has(.n-{s}:hover) .ar-node:not(.n-{s}):not(.nb-{s}){{opacity:.35}}")
     return body, "".join(css)
@@ -237,6 +278,7 @@ def render_architecture(spec, u, lv):
 
 # ---------------------------------------------------------------- compare
 def render_compare(spec, u, lv):
+    need(spec, "title", "before", "after")
     def panel(side, key, default_tone):
         d = spec[key]
         items = "".join(
@@ -262,8 +304,11 @@ def render_compare(spec, u, lv):
 
 # ---------------------------------------------------------------- loop
 def render_loop(spec, u, lv):
+    need(spec, "title", "steps")
     steps = spec["steps"]
     n = len(steps)
+    if not 3 <= n <= 6:
+        fail(f"loop: 3 to 6 steps fit the ring; got {n}")
     goal = spec.get("goal")
     back = spec.get("back_label") if goal else None
     cx, R = 200, 118
@@ -313,9 +358,14 @@ def render_loop(spec, u, lv):
 
 # ---------------------------------------------------------------- flow
 def render_flow(spec, u, lv):
+    need(spec, "title", "steps")
+    for st in spec["steps"]:
+        need(st, "label")
     steps = spec["steps"]
     n = len(steps)
-    focal = spec.get("focal", n - 1)
+    if n < 2:
+        fail("flow: needs at least 2 steps")
+    focal = as_index(spec.get("focal", n - 1), n, "flow: focal")
     inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
     track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}"><span class="fl-dot">{i+1}</span>'
                     f'<span class="fl-lb">{E(st["label"])}</span></label>' for i, st in enumerate(steps))
@@ -347,7 +397,12 @@ def render_flow(spec, u, lv):
 
 # ---------------------------------------------------------------- ladder
 def render_ladder(spec, u, lv):
+    need(spec, "title", "levels")
+    for l in spec["levels"]:
+        need(l, "name")
     lvls = spec["levels"]
+    if len(lvls) < 2:
+        fail("ladder: needs at least 2 levels")
     n = len(lvls)
     now_l = spec.get("now_label", "Now")
     next_l = spec.get("next_label", "Next move")
@@ -382,14 +437,23 @@ PR_COLORS = ["var(--b)", "#14b8a6", "#8b5cf6", "#f59e0b"]
 
 
 def render_proportion(spec, u, lv):
+    need(spec, "title", "groups")
     groups = spec["groups"]
+    for g in groups:
+        need(g, "label")
+        if not isinstance(g.get("count"), int) or isinstance(g.get("count"), bool) or g["count"] < 0:
+            fail(f"proportion: count of '{g['label']}' must be a non-negative integer")
+        if g.get("color") is not None and not COLOR_RE.match(str(g["color"])):
+            fail(f"proportion: color {g['color']!r} is not a plain CSS colour (#hex, name, rgb(), var(--x))")
+    if groups[-1]["count"] == 0:
+        fail("proportion: the last group hides the gem, so it needs at least 1 dot")
     total = sum(g["count"] for g in groups)
     if total != 99:
         raise SystemExit(f"proportion: group counts must add up to 99 (the 100th dot is the gem); got {total}")
-    cols = [g.get("color") or (PR_COLORS[i] if i < len(groups) - 1 else "#9ca3af") for i, g in enumerate(groups)]
+    cols = [g.get("color") or (PR_COLORS[i % len(PR_COLORS)] if i < len(groups) - 1 else "#9ca3af") for i, g in enumerate(groups)]
     seq = [c for g, c in zip(groups, cols) for _ in range(g["count"])]
     start_last = 99 - groups[-1]["count"]
-    gem_at = spec.get("gem_at", start_last + groups[-1]["count"] // 2)
+    gem_at = as_index(spec.get("gem_at", start_last + groups[-1]["count"] // 2), 100, "proportion: gem_at")
     seq.insert(gem_at, "gem")
     dots = "".join(f'<i class="pr-gem" style="--d:0s;background:#9ca3af"></i>' if c == "gem" else
                    f'<i style="--d:{(i % 10) * .03 + (i // 10) * .03:.2f}s;background:{c}"></i>' for i, c in enumerate(seq))
@@ -432,10 +496,12 @@ RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architect
 
 # ---------------------------------------------------------------- assembly
 def build_one(spec, idx, intensity, target):
-    pat = spec["pattern"]
+    pat = spec.get("pattern")
     if pat not in RENDER:
         raise SystemExit(f"unknown pattern: {pat} (known: {', '.join(RENDER)})")
-    lv = int(intensity or spec.get("intensity", 2))
+    lv = intensity or spec.get("intensity", 2)
+    if lv not in (1, 2, 3):
+        fail(f"intensity must be 1, 2 or 3; got {lv!r}")
     u = "dd" + hashlib.sha1(f"{idx}:{json.dumps(spec, sort_keys=True)}".encode()).hexdigest()[:6]
     body, state_css = RENDER[pat](spec, u, lv)
     note = f'<div class="note">{E(spec["note"])}</div>' if spec.get("note") else ""
@@ -473,7 +539,12 @@ def main():
     ap.add_argument("-o", "--out", required=True)
     ap.add_argument("--title", default="Diagrams")
     a = ap.parse_args()
-    specs = [json.loads(pathlib.Path(p).read_text(encoding="utf-8")) for p in a.specs]
+    specs = []
+    for f in a.specs:
+        try:
+            specs.append(json.loads(pathlib.Path(f).read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError) as e:
+            fail(f"{f}: {e}")
     built = [build_one(s, i, a.intensity, a.target) for i, s in enumerate(specs)]
     lang = "ja" if has_cjk(json.dumps(specs, ensure_ascii=False)) else "en"
     out = pathlib.Path(a.out)

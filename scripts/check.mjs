@@ -6,8 +6,8 @@
 // Static checks always run. Rendered checks run when playwright-core (npm run setup) and Google Chrome
 // are available; otherwise they are skipped with a warning. Exit code 1 if any FAIL.
 //
-// zenn:       each html-embed block at widths 700/591/561/559/340, light+dark, after every click:
-//             height <= 500px, no horizontal overflow, text >= 12px, buttons/tags on one line,
+// zenn:       fences intact; each html-embed block at widths 700/591/561/559/340, light+dark, after every click:
+//             height <= 500px, no horizontal overflow (page or inside the diagram), text >= 12px, buttons/tags on one line,
 //             no animation loop faster than 0.5s (Zenn bans flashing; WCAG 2.3.1)
 // standalone: widths 1200/768/375, light+dark: overflow, text size, loop speed
 // slides:     1280x720 per <section class="slide">: content fits the slide, text size, loop speed
@@ -29,7 +29,13 @@ const fail = (where, msg) => results.push(["FAIL", where, msg]);
 const warn = (where, msg) => results.push(["WARN", where, msg]);
 
 // ---------------------------------------------------------------- static
-const blocks = target === "zenn" ? [...src.matchAll(/```html-embed\n([\s\S]*?)\n```/g)].map((m) => m[1]) : [src];
+const blocks = target === "zenn" ? [...src.matchAll(/```html-embed\r?\n([\s\S]*?)\r?\n```/g)].map((m) => m[1]) : [src];
+if (target === "zenn") {   // a stray newline + ``` inside the content closes the fence early and leaks HTML into the article
+  const fences = src.split(/\r?\n/).filter((l) => /^```/.test(l)).length;
+  if (fences % 2) fail("markdown", `odd number of \`\`\` fence lines (${fences}): a block is broken`);
+  const outside = src.replace(/```html-embed\r?\n[\s\S]*?\r?\n```/g, "");
+  if (/^\s*</m.test(outside)) fail("markdown", "HTML outside the html-embed blocks (a fence closed early?)");
+}
 if (target === "zenn" && blocks.length === 0) { console.error("no ```html-embed blocks found"); process.exit(2); }
 blocks.forEach((b, i) => {
   const where = target === "zenn" ? `block ${i + 1}` : path.basename(file);
@@ -54,7 +60,21 @@ catch { try { ({ chromium } = await import("playwright-core")); } catch { chromi
 
 const PROBE = () => {
   const roots = [...document.querySelectorAll(".dd")];
-  const out = { h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  // Text cut off by the diagram's overflow:hidden. Measured per text node (Range), so decorative pseudo-elements
+  // that are clipped on purpose (rainbow border square, gem rays) do not count.
+  const clipped = [];
+  for (const r of roots) {
+    const box = r.getBoundingClientRect();
+    const tw = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
+    for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+      if (!n.textContent.trim()) continue;
+      const rg = document.createRange(); rg.selectNodeContents(n);
+      const b = rg.getBoundingClientRect();
+      if (!b.width || !b.height) continue;   // hidden state
+      if (b.right > box.right + 1 || b.left < box.left - 1) { clipped.push(`${r.id} «${n.textContent.trim().slice(0, 24)}»`); break; }
+    }
+  }
+  const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     minFont: 99, minFontAt: "", wrapped: [], fastLoops: [], slides: [] };
   for (const el of document.querySelectorAll("body *")) {
     const cs = getComputedStyle(el);
@@ -77,13 +97,14 @@ const PROBE = () => {
   return out;
 };
 
-async function runStates(page, where, maxH) {
+async function runStates(page, where, maxH, shotFn) {
   const labels = await page.$$("label[for]");
   const check = async (state) => {
     const r = await page.evaluate(PROBE);
     const w = `${where} [${state}]`;
     if (maxH && r.h > maxH) fail(w, `height ${r.h}px > ${maxH}px`);
     if (r.overflowX) fail(w, "horizontal overflow");
+    if (r.clipped.length) fail(w, `text runs past the diagram edge (cut off): ${r.clipped.join(", ")}`);
     if (r.minFont < 11.95) fail(w, `text ${r.minFont.toFixed(1)}px < 12px at ${r.minFontAt}`);
     if (r.wrapped.length) fail(w, `button/tag wraps: ${[...new Set(r.wrapped)].join(", ")}`);
     if (r.fastLoops.length) fail(w, `animation loop < 0.5s (flashing risk): ${[...new Set(r.fastLoops)].join(", ")}`);
@@ -91,10 +112,12 @@ async function runStates(page, where, maxH) {
   };
   await page.waitForTimeout(300);
   await check("initial");
+  if (shotFn) await shotFn(0);
   for (const [i, l] of labels.entries()) {
     try { await l.click({ timeout: 2000 }); } catch { continue; }   // hidden label of an inactive state
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(1300);
     await check(`click ${i + 1}`);
+    if (shotFn) await shotFn(i + 1);
   }
 }
 
@@ -113,8 +136,10 @@ if (!chromium) {
         const page = await browser.newPage({ viewport: { width: w, height: 800 } });
         await page.setContent(`<!doctype html><html${t === "dark" ? ' data-theme="dark"' : ""}><head><meta charset="utf-8"><style>html,body{margin:0}</style></head><body>${b}</body></html>`);
         const where = `block ${bi + 1} @${w}px ${t}`;
-        await runStates(page, where, 500);
-        if (shots) await page.screenshot({ path: path.join(shots, `block${bi + 1}-${w}-${t}.png`), clip: { x: 0, y: 0, width: w, height: 500 } });
+        const shotFn = shots && (w === 700 || w === 340)   // one screenshot per state at the widest and narrowest width
+          ? (k) => page.screenshot({ path: path.join(shots, `block${bi + 1}-${w}-${t}-s${k}.png`), clip: { x: 0, y: 0, width: w, height: 500 } })
+          : null;
+        await runStates(page, where, 500, shotFn);
         await page.close();
       }); });
     } else {

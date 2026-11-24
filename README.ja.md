@@ -63,7 +63,9 @@ node scripts/check.mjs out.md --shots .check/out
 node scripts/check.mjs deck.html --pdf deck.pdf
 ```
 
-`build.py` は Python 3 だけで動きます。`check.mjs` には、Node 18 以上と、`npm run setup`（playwright-core）、Google Chrome が必要です。そろっていない場合は静的な検査だけを行い、その旨を表示します。
+`build.py` は Python 3 だけで動きます（Windows では `python3` の代わりに `py`）。JSON に必須の項目がない、存在しない箱の id を指している、出力を壊す値が入っている、といった場合は、理由を表示して止まります。
+
+`check.mjs` には、Node 18 以上と、`npm run setup`（playwright-core）、Google Chrome の安定版が必要です。Chromium など別の Chrome を使う場合は、`CHROME_PATH=/path/to/chrome` を指定してください。そろっていない場合は静的な検査だけを行い、その旨を表示します。`--shots DIR` を付けると、一番広い幅と一番狭い幅で、状態ごとにスクリーンショットを保存します。
 
 ## 演出のルール
 
@@ -73,7 +75,7 @@ node scripts/check.mjs deck.html --pdf deck.pdf
 
 ## Zenn で使うときの注意
 
-Zenn 公式は切り替えの境目を640px と案内しています。ただ、実測すると、画面幅1100px の PC で埋め込みの幅は591px でした。640px のままだと、PC の読者にもスマホ用のレイアウトが出てしまいます。このスキルは境目を560px にしています。詳しくは [references/targets/zenn.md](references/targets/zenn.md) を見てください。
+Zenn 公式は切り替えの境目を640px と案内しています。ただ、公開中の記事で実測すると、画面幅1440px と1280px では埋め込みの幅が706px なのに対し、1100px では591px、1024px では515px でした。この幅の範囲ではサイドバーが出て、本文の列が狭くなるためです。640px のままだと、よくある PC の画面幅でもスマホ用のレイアウトが出てしまいます。このスキルは境目を560px にしています。詳しくは [references/targets/zenn.md](references/targets/zenn.md) を見てください。
 
 ## ライセンス
 

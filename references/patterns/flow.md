@@ -15,7 +15,7 @@ Use it for linear processes: release steps, onboarding, an incident timeline.
     {"label": "Branch", "detail": "Work on a feature branch; main stays deployable"},
     {"label": "Ship", "detail": "Merge deploys automatically"}
   ],
-  "focal": 4
+  "focal": 1
 }
 ```
 
@@ -23,7 +23,7 @@ Use it for linear processes: release steps, onboarding, an incident timeline.
 |---|---|
 | `steps[].label` | ≤ 10 ASCII / 6 CJK characters; it sits under a 44px circle |
 | `steps[].detail` | One or two sentences |
-| `focal` | Index of the step that matters most; default is the last |
+| `focal` | 0-based index of the step that matters most; default is the last. build.py rejects an index outside the steps |
 
 ## Limits
 

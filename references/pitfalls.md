@@ -2,7 +2,7 @@
 
 | Symptom | Cause | Fix (already in the templates) |
 |---|---|---|
-| PC readers on Zenn get the phone layout | Zenn's embed was 591px wide in a 1100px window; the suggested 640px breakpoint catches it | Breakpoint 560px; checker renders 700/591/561/559/340 |
+| PC readers on Zenn get the phone layout | Zenn's embed is 515–600px wide in 1000–1200px windows (sidebar shown); the suggested 640px breakpoint catches them | Breakpoint 560px; checker renders 700/591/561/559/340 |
 | A horizontal scrollbar flashes when an answer appears | `stamp` scales to 2.2× and transforms extend the scrollable area | `overflow:hidden` on `.dd` |
 | Rainbow border shows gaps or only covers part of a wide box | The rotating pseudo-element was sized with `inset:-60%`; a wide, short box is not covered at every angle | Pseudo-element is a fixed 1400px square centred on the box |
 | Gold text turns grey | A pattern rule like `.k span{color:var(--mut)}` beat `.gold{color:transparent}` | `.gold` sets `color:transparent!important` |

@@ -41,6 +41,8 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
    python3 scripts/build.py a.json b.json --target slides -o deck.html
    python3 scripts/build.py spec.json --target standalone -o page.html --intensity 3
    ```
+   build.py stops with `error: …` when a spec is missing a field or has a value that would break the output, and
+   prints `WARN: …` when a label will not fit the phone layout. Fix the spec; do not ignore warnings.
 7. **Check** until there are 0 FAIL:
    ```sh
    npm run setup          # once; uses the installed Google Chrome via playwright-core
@@ -49,8 +51,9 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
    ```
    Without Node/Chrome the script still runs the static checks and says the rendered checks were skipped.
    Tell the user when that happened; do not claim the layout was verified.
-8. **Look at the screenshots** in light and dark at the narrowest and widest width. The checker measures
-   overflow, height, text size, wrapping and loop speed; it cannot see overlaps, empty space or ugly crossings.
+8. **Look at the screenshots** (`--shots` saves every state at 700px and 340px, light and dark). The checker
+   measures overflow, cut-off text, height, text size, wrapping and loop speed; it cannot see overlaps inside an
+   SVG, empty space or ugly crossings.
 9. If the diagram summarises a source document, apply `references/citation.md` to the `note`.
 
 ## Patterns

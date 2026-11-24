@@ -26,9 +26,17 @@ Paste each block into the article as is.
 
 ## Width: use 560px, not 640px, as the breakpoint
 
-Zenn's prompt suggests `@media (max-width: 640px)` and "about 700px on PC". Measured on 2026-11-25, a PC
-browser window 1100px wide gave the embed **591px**. With a 640px breakpoint, ordinary PC readers got the
-phone layout. This skill switches at 560px, and the checker renders at 700, 591, 561, 559 and 340px.
+Zenn's prompt suggests `@media (max-width: 640px)` and "about 700px on PC". Measured on a published article
+on 2026-11-25 (embed width by browser window width):
+
+| Window | 1440 | 1280 | 1100 | 1024 | 768 | phone |
+|---|---|---|---|---|---|---|
+| Embed | 706px | 706px | **591px** | **515px** | 649px | ~340px |
+
+Between about 1000px and 1200px Zenn shows a sidebar and the article column shrinks, so ordinary PC windows
+give 515–600px. With a 640px breakpoint those readers get the phone layout. This skill switches at 560px: wide
+layouts still fit at 561px with text ≥ 12px, and below that (e.g. a 1024px window) the phone layout is the
+right choice. The checker renders at 700, 591, 561, 559 and 340px.
 Re-measure if Zenn changes its layout: open a published article, run
 `[...document.querySelectorAll('iframe[src*="embed.zenn.studio/html"]')].map(f=>f.getBoundingClientRect().width)`
 in the console.

@@ -11,5 +11,7 @@ hosted anywhere, or opened from disk.
 - Dark mode follows the OS (`prefers-color-scheme`) unless `<html data-theme="light|dark">` is set.
 - No height limit, but keep each diagram under one screen; a diagram that needs scrolling is two diagrams.
 - The checker renders at 1200, 768 and 375px in light and dark.
-- To embed in another site, copy one `<div class="dd …">` together with both `<style>` blocks.
-  The CSS is scoped to `.dd`, and state selectors use the diagram's unique id.
+- To embed in another site, copy the `<div class="dd …">` and the **second** `<style>` block only. The first
+  block styles this page (`body` background and padding) and would change the host page. The second block is
+  scoped to `.dd` and the diagrams' unique ids; it also contains the rules of the other diagrams on the page,
+  which are harmless. For a single diagram, build a page with just that spec.

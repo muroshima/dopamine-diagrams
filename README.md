@@ -65,8 +65,12 @@ node scripts/check.mjs out.md --shots .check/out
 node scripts/check.mjs deck.html --pdf deck.pdf
 ```
 
-`build.py` needs only Python 3. `check.mjs` needs Node 18+, `npm run setup` (playwright-core) and Google Chrome;
-without them it runs static checks only and says so.
+`build.py` needs only Python 3 (on Windows run `py` instead of `python3`). It stops with a message when a spec is
+missing a field, uses an unknown node id, or has a value that would break the output.
+
+`check.mjs` needs Node 18+, `npm run setup` (playwright-core) and the stable Google Chrome. For Chromium or another
+Chrome build, set `CHROME_PATH=/path/to/chrome`. Without them it runs static checks only and says so.
+`--shots DIR` saves one screenshot per state at the widest and narrowest width.
 
 ## Rules the effects follow
 
