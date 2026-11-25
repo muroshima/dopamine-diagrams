@@ -32,6 +32,9 @@ on-call runbooks. If there is no "common mistake" worth showing, omit `bad`; the
 | `bad_label`, `good_label` | no | Defaults: "Common mistake", "Do this instead"; 「よくある間違い」「こうする」 when the spec is Japanese (see `lang` in SKILL.en.md) |
 | `cases[].importance` | no | Importance 1-4. A badge (stars and a word) appears next to the situation heading. 4 (Critical, rainbow edge) once per diagram. Default words Low / Medium / High / Critical (低・中・高・最重要 in a Japanese spec) |
 | `cases[].importance_label` | no | Changes the badge word; one or two words. Use with `importance` |
+| `reveal` | no | `"flip"` turns the answer into a face-down card: the back shows `cases[].hint` (default "Guess the answer, then flip") and a "Flip ▶" button; pressing it turns the card to the answer. Readers guess before they check, so the answer sticks. Change the buttons with `flip_label`, `unflip_label`. The default (`"stamp"`) stamps the answer in |
+| `cases[].hint` | no | The back of the card with `reveal:"flip"`. A short teaser (e.g. "Importance ★★: what do you fix?") |
+| `flip_label`, `unflip_label` | no | Words on the flip and hide buttons. Short |
 
 ## Limits
 

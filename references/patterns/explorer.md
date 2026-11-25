@@ -29,6 +29,9 @@
 | `bad_label`, `good_label` | いいえ | 既定は spec がひらがなかカタカナを含むか `"lang": "ja"` なら「よくある間違い」「こうする」、そうでなければ "Common mistake"、"Do this instead"（SKILL.md の `lang` を参照） |
 | `cases[].importance` | いいえ | 重要度 1〜4。状況の見出しの横に段階バッジ（★の数と言葉）が出る。4（最重要、虹色の縁）は1つの図に1つまで。既定の言葉は「低・中・高・最重要」（英語の spec では Low・Medium・High・Critical） |
 | `cases[].importance_label` | いいえ | バッジの言葉を変える。1〜2語。`importance` と一緒に書く |
+| `reveal` | いいえ | `"flip"` にすると、答えが伏せたカードになる。裏面に `cases[].hint`（既定は「答えを予想してからめくる」）と「めくる ▶」のボタンが出て、押すとカードが裏返って答えが出る。読者が予想してから答え合わせをするので、答えが記憶に残りやすい。ボタンの文言は `flip_label`、`unflip_label` で変えられる。既定（`"stamp"`）は答えがスタンプで出る |
+| `cases[].hint` | いいえ | `reveal:"flip"` のときの裏面の言葉。予告を短く（例: 「重要度★★：どこを直す？」） |
+| `flip_label`, `unflip_label` | いいえ | めくる・伏せるボタンの言葉。短く |
 
 ## 上限
 
