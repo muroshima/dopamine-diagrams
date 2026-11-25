@@ -6,9 +6,9 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | Class | Looks like | Use on | Notes |
 |---|---|---|---|
 | `.ttl` | Title in a rainbow gradient that slowly flows (5s loop) | Diagram title | lv1: plain bold |
-| `.gold` | Gold gradient text with a dark outline; its glow breathes (1.8s) | 1–2 focal words: the answer label, a stamp | Needs ≥ 16px to read; outline keeps contrast on light backgrounds |
+| `.gold` | Gold gradient text with a dark outline; its glow breathes (1.8s) | 1–2 focal words: the answer label, a stamp | Needs ≥ 16px to read; outline keeps contrast on light backgrounds. lv1: dark amber text (≥ 4.5:1 in light and dark) |
 | `.rb` + inner `.in` | Rainbow light running around a box (1.8s per turn; lv3 1.2s) | The one box the reader should end on | 6px band. Never two side by side |
-| `.neon` / `.chip-on` | Box shadow that brightens and fades (1.6s) | Selected chip, the active gate | lv1: static outline |
+| `.neon` / `.chip-on` | Box shadow that brightens and fades (1.6s) | Selected chip, the active gate | Deep orange so white text stays ≥ 4.5:1. lv1: static outline, solid background |
 | `.tb.t1`-`.t4` | Importance tier badge: colour, line style (dashed, double, solid with glow, rainbow edge), number of stars and a word change together. Static | Severity, risk, how much a level matters (spec `importance`) | lv1: no glow or rainbow on t3/t4 |
 | `.btn` press | Sinks 3px onto its shadow while pressed (`:active`) | Every button | Same |
 | `.cnt` | A number rolling from `--from` to `--to` (an `@property` integer drawn by a counter; 1.4s, easing out). With motion off only the final value shows; without `@property` it switches to the final value once, halfway. The real number sits in `.sr` for screen readers | compare `metric` | Same |

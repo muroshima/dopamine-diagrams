@@ -18,9 +18,9 @@ ZENN_MAX_BYTES = 50 * 1024
 DARK_VARS = ("--bg:#161b22;--ink:#e6edf3;--mut:#9da7b3;--line:#30363d;--card:#0d1117;--a:#fb923c;--as:#431407;"
              "--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;--yt:#fde68a;--bt:#93c5fd;"
              "--v:#a78bfa;--glow:#ffd54f")
-CHIP_ON = ("background:linear-gradient(180deg,#ff8a3d,#e8430c);border-color:transparent;color:#fff;"
+CHIP_ON = ("background:linear-gradient(180deg,#cc4a10,#a3360b);border-color:transparent;color:#fff;"
            "animation:dd-neon var(--pulse) ease-in-out infinite")
-CHIP_ON_LV1 = "background:var(--a);border-color:transparent;color:#fff"
+CHIP_ON_LV1 = "background:#9a3412;border-color:transparent;color:#fff"   # white on --a is only 3.4:1
 
 def E(s):
     """Escape user text for HTML. Newlines become spaces (a newline + ``` would close the Zenn fence)."""
@@ -1068,8 +1068,8 @@ def render_flow(spec, u, lv):
         pans += f'<div class="fl-p fl-p{i}">{inner}</div>'
     body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
             f'<div class="fl-track{" fl-many" if n > 4 else ""}">{track}</div><div class="fl-panel">{pans}</div>')
-    dot_on = ("background:var(--a);border-color:transparent;color:#fff" if lv == 1 else
-              "background:linear-gradient(180deg,#ff8a3d,#e8430c);border-color:transparent;color:#fff;animation:dd-neon var(--pulse) ease-in-out infinite")
+    dot_on = ("background:#9a3412;border-color:transparent;color:#fff" if lv == 1 else
+              "background:linear-gradient(180deg,#cc4a10,#a3360b);border-color:transparent;color:#fff;animation:dd-neon var(--pulse) ease-in-out infinite")
     css = []
     for i in range(n):
         sel = f"#{u}-f{i}:checked"
@@ -1084,7 +1084,7 @@ def render_flow(spec, u, lv):
     # PDF has no clicks and no room for every detail: print the focal step
     css.append(f"@media print{{#{u} .fl-p{{display:none!important}}#{u} .fl-p{focal}{{display:block!important}}#{u} .fl-p .rb{{margin:0}}"
                f"#{u} .fl-dot{{background:var(--card)!important;color:var(--b)!important;border-color:var(--b)!important}}"
-               f"#{u} .fl-focal .fl-dot{{background:var(--a)!important;color:#fff!important;border-color:var(--a)!important}}}}")
+               f"#{u} .fl-focal .fl-dot{{background:var(--card)!important;color:#9a3412!important;border-color:#9a3412!important}}}}")   # no-background printing
     return body, "".join(css)
 
 
@@ -1118,7 +1118,7 @@ def render_ladder(spec, u, lv):
                     f'<div>{E(now_l)}: {E(l.get("now", ""))}</div>'
                     f'<div class="ld-nx">{E(next_l)} ▶ <span class="gold">{E(l.get("next", ""))}</span></div></div>' for i, l in enumerate(lvls))
     body = f'{inp}<div class="ttl">{E(spec["title"])}</div><div class="ld-st">{bars}</div><div class="ld-pn">{pans}</div>'
-    on = "background:var(--a);color:#fff" if lv == 1 else "background:linear-gradient(180deg,#ff8a3d,#e8430c);color:#fff"
+    on = "background:#9a3412;color:#fff" if lv == 1 else "background:linear-gradient(180deg,#cc4a10,#a3360b);color:#fff"
     neon = "" if lv == 1 else "animation:dd-neon var(--pulse) ease-in-out infinite;"
     pulse = "" if lv == 1 else ",dd-goldpulse 1.8s ease-in-out .8s infinite"
     css = []
