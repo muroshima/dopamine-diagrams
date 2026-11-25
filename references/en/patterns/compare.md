@@ -32,6 +32,7 @@ architecture in words. For two *diagrams* side by side, use two specs instead.
 | `metric.goal`, `metric.better` | Optional. With a goal, both panels show a gauge with a goal line, and say "Reached ✓" or "Not yet" in words and with the border. better is `lower` or `higher`; by default it follows the direction from before to after (required when before equals after). Keep the goal label ("Goal 15") short |
 | `before.cutin`, `after.cutin` | Optional. A one-line verdict on a slanted band when the panel appears; usually on `after` only |
 | `hush` | Optional. `true`: when "after" opens, the title and the button stop moving and the light across the button fades (text never fades) |
+| `stepup` | Optional. `true`: when "after" opens, the grounds (its items) appear one by one 0.6s apart, then the conclusion (`after.headline` and `after.message`) lands with a stamp, like a rhythm game result screen. Each item is a little bigger than the last and the conclusion is the biggest. The rainbow border moves from the panel to the conclusion. The conclusion starts within 2s of the click, so 4 or more items come closer together (build.py warns at 6 or more; keep the grounds to 3–5). With `after.cutin`, the slanted band cuts in together with the conclusion (the answer never shows before it). An item's `new` tag pops with its item. "Reached ✓" pops instead of stamping. Needs `after.items` and `after.headline` or `after.message` |
 
 ## Limits
 

@@ -2,8 +2,13 @@
 .dd .dc-root{margin-top:6px;background:var(--card);border:2px dashed var(--mut);border-radius:10px;padding:12px;
   font-weight:900;font-size:16px;text-align:center;position:relative}
 .dd .dc-kick{display:block;font-size:12px;font-weight:700;color:var(--mut)}
-.dd .dc-done{display:none;position:absolute;right:10px;top:-12px;font-size:20px;transform:rotate(-6deg)}
+.dd .dc-done{display:none;position:absolute;right:10px;top:-12px;font-size:20px;rotate:-6deg}   /* rotate, not transform: the stamp's last frame must not undo the tilt */
 .dd .dc-mid{text-align:center;margin:12px 0}
+/* stepup: vague -> a bit concrete -> testable. Each step is a little bigger (scale + width, set inline); the last is .rb */
+.dd .dc-steps{display:none;margin:-4px 0 10px}
+.dd .dc-st{margin:0 auto 6px;border:2px solid var(--g);border-radius:10px;background:var(--card)}
+.dd .dc-st>.in{padding:3px 10px;font-weight:800;font-size:16px;line-height:1.35;text-align:center;border-radius:8px}
+.dd .dc-ar{color:var(--g);font-size:12px}
 .dd .dc-hint{font-size:12px;color:var(--r);margin-top:6px}
 .dd .dc-t2{display:none}
 .dd .dc-kids{display:grid;gap:6px}
@@ -19,4 +24,9 @@
   .dd .dc-root{padding:8px;font-size:15px}
   .dd .dc-mid{margin:8px 0}
   .dd .dc-done{font-size:16px}
+  .dd .dc-steps{margin:-2px 0 8px}
+  .dd .dc-st{margin-bottom:4px}
+  .dd .dc-st>.in{font-size:15px}
 }
+/* stepup: the pieces come in from their faint preview, so they never vanish first while waiting their turn */
+@keyframes dc-kin{from{opacity:.25;filter:blur(2px);transform:translateY(-10px)}}
