@@ -42,6 +42,7 @@
   "metric": {
     "label": "Requests waiting",
     "before": 24,
-    "after": 12
+    "after": 12,
+    "goal": 15
   }
 }

@@ -40,6 +40,7 @@
     "label": "承認待ちの件数",
     "before": 24,
     "after": 12,
-    "unit": "件"
+    "unit": "件",
+    "goal": 15
   }
 }
