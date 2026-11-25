@@ -1,0 +1,42 @@
+{
+  "pattern": "stampcard",
+  "title": "Test automation: seven weeks to the reward",
+  "days": [
+    {
+      "label": "Week 1",
+      "name": "Count breakages",
+      "detail": "List three months of incidents and count where things broke. Write nothing yet"
+    },
+    {
+      "label": "Week 2",
+      "name": "Write one test",
+      "detail": "Write a single test for the part that breaks most. Coverage can wait"
+    },
+    {
+      "label": "Week 3",
+      "name": "Run it in CI",
+      "detail": "Run that test on every push. Tests you only run by hand get forgotten"
+    },
+    {
+      "label": "Week 4",
+      "name": "Block on red",
+      "detail": "A failing test blocks the merge. Only now does it protect anything"
+    },
+    {
+      "label": "Week 5",
+      "name": "One per incident",
+      "detail": "Close each incident with a test that stops it coming back"
+    },
+    {
+      "label": "Week 6",
+      "name": "Share the habit",
+      "detail": "Rotate who asks \"where is the test?\" in review each week"
+    },
+    {
+      "label": "Week 7",
+      "name": "Ship on Fridays",
+      "detail": "CI tells you first when something breaks, so any day is a release day"
+    }
+  ],
+  "note": "Example content for the stampcard pattern"
+}

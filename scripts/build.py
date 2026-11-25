@@ -108,7 +108,8 @@ DEFAULTS = {
            "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる", "laps": "周回", "lap_n": "{n}周目",
            "combo_prompt": "確かめた条件を押す", "combo_count": "クリア", "combo_reach": "あと1つ！",
            "combo_full": "そろった！", "combo_last": "残りはこれ", "combo_locked": "全部そろうと結論が出る",
-           "combo_stamp": "確定！"},
+           "combo_stamp": "確定！",
+           "day": "{n}日目", "stamp_done": "済", "reward": "ごほうび", "stamp_prompt": "どこまで進んだ？ マスをクリック"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
@@ -117,7 +118,8 @@ DEFAULTS = {
            "unflip": "Hide", "hidden": "Guess the answer, then flip", "laps": "Laps", "lap_n": "lap {n}",
            "combo_prompt": "Tick each one you have checked", "combo_count": "met", "combo_reach": "One more!",
            "combo_full": "All set!", "combo_last": "Last one", "combo_locked": "Meet them all to unlock the verdict",
-           "combo_stamp": "Unlocked!"},
+           "combo_stamp": "Unlocked!",
+           "day": "Day {n}", "stamp_done": "Done", "reward": "Reward", "stamp_prompt": "How far along? Click a square"},
 }
 
 
@@ -1288,9 +1290,114 @@ def render_combo(spec, u, lv):
     return body, "".join(css)
 
 
+# ---------------------------------------------------------------- stampcard
+def render_stampcard(spec, u, lv):
+    """A login-bonus card: every square is shown up front, the last one is the big gold reward. Picking a square
+    stamps it; the squares before it are already stamped and stay still, so only one stamp ever moves."""
+    need(spec, "title")
+    days = items_of(spec, "days", dict, ("name",), lo=3, hi=8)
+    n = len(days)
+
+    def text_opt(d, key, default, where):
+        v = d.get(key, default)
+        if not isinstance(v, str) or not v.strip():
+            fail(f"stampcard: {where}{key} must be a non-empty string; got {v!r:.40}")
+        return v
+    labels = [text_opt(d, "label", T(spec, "day").format(n=i + 1), f"days[{i}].") for i, d in enumerate(days)]
+    for i, d in enumerate(days):
+        if "detail" in d:
+            text_opt(d, "detail", None, f"days[{i}].")
+            # the panel sits under the squares, and 7-8 squares make a tall card on phones (an estimate: check.mjs
+            # measures the real height)
+            lim = 660 if n == 8 else 700 if n == 7 else 900
+            if text_w(d["detail"], 14) > lim:
+                print(f"WARN: stampcard: days[{i}].detail is long for {n} squares; on phones the diagram may pass "
+                      f"Zenn's 500px. Shorten it", file=sys.stderr)
+    done_l = text_opt(spec, "done_label", T(spec, "stamp_done"), "")
+    reward_l = text_opt(spec, "reward_label", T(spec, "reward"), "")
+    prompt = text_opt(spec, "prompt", T(spec, "stamp_prompt"), "")
+    cur = spec.get("current")
+    if cur is not None:
+        as_index(cur, n, "stampcard: current")
+
+    # Layout. Wide: one row up to 6 squares; 7-8 go in two rows with the reward on the right across both.
+    # Phone (<=560px): 3 columns (2 for 3 squares), the reward fills the rest of its row, or a new full row when
+    # only one cell is left (a one-cell reward would be the smallest square on the card).
+    two = n > 6
+    cols = math.ceil((n - 1) / 2) if two else n - 1
+    pc = min(3, n - 1)
+    rem = (n - 1) % pc
+    span = pc - rem if pc - rem >= 2 else pc
+    wide_in = (529 - 6 * cols) / (cols + 1.6) - 16          # narrowest PC embed (561px) minus padding = 529
+    phone_in = (308 - 12) / 3 - 16                           # 340px phone minus padding = 308
+    inner = min(wide_in, phone_in)
+    for i, (d, lab) in enumerate(zip(days, labels)):
+        last = i == n - 1
+        if text_w(lab, 12) > (inner * 1.6 if last else inner):
+            print(f"WARN: stampcard: days[{i}].label '{lab}' is too wide for its square; keep it to a few characters",
+                  file=sys.stderr)
+        if not last and text_w(d["name"], 12) > inner * 3:
+            print(f"WARN: stampcard: days[{i}].name '{d['name'][:30]}' needs more than three lines in its square; "
+                  f"shorten it", file=sys.stderr)
+        # Latin words do not break by themselves (CJK text does, between any two characters)
+        if not last and max((text_w(w, 12) for w in re.findall(r"[^\s\u2e80-\uffff]+", str(d["name"]))), default=0) > inner:
+            print(f"WARN: stampcard: days[{i}].name '{d['name'][:30]}' has a word wider than its square; "
+                  f"it will break mid-word", file=sys.stderr)
+    if text_w(days[-1]["name"], 19) > inner * 1.6 * 2:   # the reward name is 19px; over two lines it crowds the square
+        print(f"WARN: stampcard: the reward name '{days[-1]['name'][:30]}' is long; keep it to a short phrase",
+              file=sys.stderr)
+    if text_w(done_l, 12) + 12 > inner:
+        print(f"WARN: stampcard: done_label '{done_l}' is too wide for the stamp; keep it to a word", file=sys.stderr)
+    if text_w(reward_l, 12) + 16 > inner * 1.6:
+        print(f"WARN: stampcard: reward_label '{reward_l}' is too wide for the reward square", file=sys.stderr)
+
+    inp = "".join(f'<input class="h" type="radio" name="{u}-c" id="{u}-c{i}"{" checked" if i == cur else ""}>'
+                  for i in range(n))
+    sq = ""
+    for i, (d, lab) in enumerate(zip(days, labels)):
+        slot = f'<span class="sc-slot"><span class="sc-tl"><span class="sc-mk">{E(done_l)}</span></span></span>'
+        if i < n - 1:
+            sq += (f'<label for="{u}-c{i}" class="sc-d sc-d{i}"><span class="sc-lb">{E(lab)}</span>'
+                   f'<span class="sc-nm">{E(d["name"])}</span>{slot}</label>')
+        else:
+            sq += (f'<label for="{u}-c{i}" class="sc-d sc-d{i} sc-last rb" style="--sp:{span}"><span class="in">'
+                   f'<span class="sc-lb">{E(lab)}</span><span class="sc-rw">{E(reward_l)}</span>'
+                   f'<span class="sc-nm gold">{E(d["name"])}</span>{slot}</span></label>')
+    grid = f"repeat({cols},minmax(0,1fr)) minmax(0,{2 if two else 1.6}fr)"   # the reward is wider when it spans two rows
+    pans = f'<div class="sc-p sc-p0">{E(prompt)}</div>'
+    for i, (d, lab) in enumerate(zip(days, labels)):
+        nm = f'<span class="gold">{E(d["name"])}</span>' if i == n - 1 else E(d["name"])
+        pans += (f'<div class="sc-p sc-q sc-q{i}"><div class="sc-ph"><span class="sc-ct">{i + 1} / {n}</span>'
+                 f'<b class="sc-pt">{E(lab)} {nm}</b></div>'
+                 + (f'<div class="sc-tx">{E(d["detail"])}</div>' if d.get("detail") else "") + '</div>')
+    body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
+            f'<div class="sc-row{" sc-two" if two else ""}" style="--cols:{grid};--pc:{pc}">{sq}</div>'
+            f'<div class="sc-pn">{pans}</div>')
+    neon = "" if lv == 1 else "animation:dd-neon var(--pulse) ease-in-out infinite;"
+    css = []
+    for i in range(n):
+        sel = f"#{u}-c{i}:checked~.sc-row"
+        done = f"{sel} .sc-d:nth-child(-n+{i + 1})"
+        # every square up to the picked one is stamped (a word and a ✓, not colour alone); only the picked one moves
+        css.append(f"{done}{{border-color:var(--g);border-style:solid;background:var(--gs)}}"
+                   f"{done} .sc-mk{{visibility:visible}}{done} .sc-slot{{border-color:transparent}}"
+                   f"{done} .sc-lb::after{{content:\" ✓\"}}"
+                   f"{sel} .sc-d{i} .sc-mk{{animation:var(--enter) .5s ease-out .1s both}}"
+                   f"#{u}-c{i}:focus-visible~.sc-row label[for={u}-c{i}]{{outline:2px solid var(--b);outline-offset:2px}}"
+                   f"#{u}-c{i}:checked~.sc-pn .sc-p0{{display:none}}"
+                   f"#{u}-c{i}:checked~.sc-pn .sc-q{i}{{display:block;animation:pop .35s ease}}")
+        if i < n - 1:
+            css.append(f"{sel} .sc-d{i}{{transform:translateY(-3px);box-shadow:0 0 0 2px var(--a);{neon}}}")
+    css.append(f"#{u}-c{n - 1}:checked~.sc-row .sc-last>.in{{background:var(--gs)}}")
+    # PDF has no clicks: print the reward's description (the point of the card), stamps as they stand
+    css.append(f"@media print{{#{u} .sc-p{{display:none!important}}#{u} .sc-q{n - 1}{{display:block!important}}}}")
+    return body, "".join(css)
+
+
 RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architecture": render_architecture,
           "compare": render_compare, "loop": render_loop, "flow": render_flow, "ladder": render_ladder,
-          "proportion": render_proportion, "combo": render_combo}
+          "proportion": render_proportion, "combo": render_combo,
+          "stampcard": render_stampcard}
 
 
 # ---------------------------------------------------------------- assembly

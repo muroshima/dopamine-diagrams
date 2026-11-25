@@ -25,6 +25,7 @@ Print to PDF (the checker's `--pdf`, or Chrome: Print → Save as PDF, margins n
   - `proportion` prints the revealed state.
   - `explorer` prints the first case. Put the most important case first, or make one slide per case.
   - `combo` prints every condition ticked, "all set" and the verdict.
+  - `stampcard` prints the squares and stamps as they are, with the last square's (the reward's) detail in the panel.
   - `ladder` prints the bars and the prompt; `architecture` and `loop` print as is.
 - Gold and rainbow text print as solid orange / ink: Chrome draws background-clipped and gradient-filled text
   in PDFs with artefacts (lines, solid boxes).

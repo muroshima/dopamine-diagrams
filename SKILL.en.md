@@ -70,6 +70,7 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
 | Levels / maturity / staged plans | `ladder` | Pick your level; "now" and a gold "next move" appear |
 | The rare case the average hides | `proportion` | 100 dots; one click fades the majority and lights up the one that matters |
 | Conditions that only count when all are met (release criteria, security requirements, checklists) | `combo` | Tick them one by one and the count grows ("3/5"); one left says "One more!", all met stamps in the verdict |
+| A rollout plan or learning roadmap, and what you get at the end | `stampcard` | Every square and the gold reward shown up front; pick a square to stamp it "Done" and read its detail |
 
 Nothing fits? Compose from the `base.css` primitives, then run the checker.
 
@@ -79,7 +80,7 @@ The effects only work when most of the diagram is calm.
 
 - **One or two focal elements per diagram.** Gold text, rainbow border and neon go there and nowhere else.
   In `architecture`, list them in `focal`; in `flow`, set `focal` to one step. In the other patterns the answer
-  area (or the top level, or the gem) is already the focal point.
+  area (or the top level, the gem, or the reward square) is already the focal point.
 - **Intensity** (`--intensity` or `"intensity"` in the spec):
   - `1` calm: plain title, accent-colour border, soft entrance. For internal docs and conservative decks.
   - `2` standard (default): rainbow title, gold, neon, stamps, rainbow border.
