@@ -1,6 +1,6 @@
 ---
 name: dopamine-diagrams
-description: 目を引くインタラクティブな解説図（アーキテクチャ図、フロー、循環、ビフォー/アフター、成熟度の段、状況別の判断表、分解、平均に埋もれる1件）を、HTML と CSS だけで作る。流れる虹色の見出し、金文字、注目の箱を回る虹色の枠、ネオンの脈動、ハンコのように出る答えといった派手な演出が付く。1つの JSON から Zenn の html-embed ブロック（JavaScript なし）、単体の HTML ページ、PDF に印刷できる16:9スライドを出力し、全幅で全部のボタンを押す表示検査も付く。ドパガキ向けの図、Zenn 記事やブログ、スライドで「止まって見てもらえる図」が欲しいときに使う。English keywords - architecture diagram, flow, cycle, before/after, maturity ladder, explorer, game-show effects, Zenn html-embed, slides.
+description: 目を引くインタラクティブな解説図（アーキテクチャ図、フロー、循環、ビフォー/アフター、成熟度の段、状況別の判断表、分解、平均に埋もれる1件、全部そろうと解放される条件）を、HTML と CSS だけで作る。流れる虹色の見出し、金文字、注目の箱を回る虹色の枠、ネオンの脈動、ハンコのように出る答えといった派手な演出が付く。1つの JSON から Zenn の html-embed ブロック（JavaScript なし）、単体の HTML ページ、PDF に印刷できる16:9スライドを出力し、全幅で全部のボタンを押す表示検査も付く。ドパガキ向けの図、Zenn 記事やブログ、スライドで「止まって見てもらえる図」が欲しいときに使う。English keywords - architecture diagram, flow, cycle, before/after, maturity ladder, explorer, checklist combo, game-show effects, Zenn html-embed, slides.
 license: MIT
 ---
 
@@ -64,6 +64,7 @@ license: MIT
 | 一直線の手順 | `flow` | 線に沿って光が流れる。手順を選ぶと説明が出る。焦点の手順は虹色の枠 |
 | 段階、成熟度、段階的な計画 | `ladder` | 自分の段を選ぶと、「いま」と金文字の「次の一手」が出る |
 | 平均に埋もれる、まれだけど大事な1件 | `proportion` | 100個の点。クリックで多数派が薄れ、大事な1個が光る |
+| 全部そろって初めて成立する条件（リリース判定、セキュリティ要件、チェックリスト） | `combo` | 条件を1つずつ押すと「3/5」と数が育つ。残り1つで「あと1つ！」、全部そろうと結論がスタンプで出る |
 
 どれも合わなければ `base.css` の部品から組み、検査を通してください。
 

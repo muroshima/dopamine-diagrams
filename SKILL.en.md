@@ -69,6 +69,7 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
 | Linear steps | `flow` | Light runs along the line; pick a step to read it; the focal step sits in a rainbow border |
 | Levels / maturity / staged plans | `ladder` | Pick your level; "now" and a gold "next move" appear |
 | The rare case the average hides | `proportion` | 100 dots; one click fades the majority and lights up the one that matters |
+| Conditions that only count when all are met (release criteria, security requirements, checklists) | `combo` | Tick them one by one and the count grows ("3/5"); one left says "One more!", all met stamps in the verdict |
 
 Nothing fits? Compose from the `base.css` primitives, then run the checker.
 

@@ -6,6 +6,7 @@
 |---|---|---|
 | N 個のうち1つを表示（タブ、ケース） | `radio`。`name` をそろえ、先頭を `checked` にする | `explorer` |
 | ビフォーとアフター、表示と非表示 | `checkbox` | `decompose` |
+| 押した数を数える、全部そろった・残り1つを判定する | `checkbox` を N 個。数は `counter-increment` を input より後ろの要素で表示。判定は `#c0:checked~#c1:not(:checked)~…` の兄弟の連鎖 | `combo` |
 | マウスを乗せた要素のつながりをたどる | なし。`svg:has(.n-x:hover) .edge:not(.x-x)` | `architecture` |
 
 ## ルール
