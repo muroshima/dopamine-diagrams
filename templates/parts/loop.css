@@ -20,7 +20,7 @@
 .dd .lp-cs{font-size:16px;fill:var(--mut)!important}
 .dd .lp-lg text{text-anchor:start;font-size:16px;fill:var(--r)!important}
 .dd.lv1 .lp-goal rect{stroke:var(--a)!important;animation:none}
-.dd.lv1 .lp-goal text,.dd.lv1 .lp-ct{stroke:none;fill:var(--a)!important}
+.dd.lv1 .lp-goal text,.dd.lv1 .lp-ct{stroke:none;fill:var(--at)!important}
 .dd.lv1 .lp-node rect{animation:none}
 .dd.lv1 .lp-flow{stroke:var(--a)}
 @media (max-width:560px){.dd .ttl{font-size:14px}}

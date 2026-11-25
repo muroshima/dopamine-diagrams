@@ -6,8 +6,9 @@
 .dd .cp-before{border-color:var(--r)}
 .dd .cp-after{border-radius:14px}
 .dd .cp-head{font-weight:900;font-size:15px;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.dd .cp-badge{font-size:12px;font-weight:800;border-radius:999px;padding:1px 10px;color:#fff;background:var(--r)}
-.dd .cp-after .cp-badge{background:var(--g)}
+.dd .cp-badge{font-size:12px;font-weight:800;border-radius:999px;padding:1px 10px;color:#fff;background:#b91c1c}   /* fixed colours: white on the dark-theme --r / --g is under 3:1 */
+.dd .cp-after .cp-badge{background:#15803d}
+@media print{.dd .cp-badge{background:none;color:#b91c1c;border:1px solid #b91c1c}.dd .cp-after .cp-badge{background:none;color:#15803d;border-color:#15803d}}
 .dd .cp-metric{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
 .dd .cp-ml{font-size:13px;color:var(--mut);font-weight:700}
 .dd .cp-mv{font-size:24px;font-weight:900;line-height:1.1}

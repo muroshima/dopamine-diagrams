@@ -4,7 +4,7 @@
 .dd{
   --bg:#fffaf3; --ink:#1f2328; --mut:#5b636e; --line:#e3d9cc; --card:#ffffff;
   --a:#ea580c; --as:#ffedd5; --b:#2563eb; --bs:#dbeafe; --g:#15803d; --gs:#dcfce7;
-  --r:#dc2626; --rs:#fee2e2; --y:#ca8a04; --ys:#fef9c3; --yt:#92400e; --bt:#1d4ed8; --v:#7c3aed; --glow:#ffb300;
+  --r:#dc2626; --rs:#fee2e2; --y:#ca8a04; --ys:#fef9c3; --yt:#92400e; --at:#c2410c; --bt:#1d4ed8; --v:#7c3aed; --glow:#ffb300;
   --enter:stamp; --spin:1.8s; --pulse:1.6s;
   font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
   color:var(--ink); background:var(--bg); padding:16px; font-size:14px; line-height:1.6;
@@ -112,20 +112,25 @@
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* Buttons are <label for=...> bound to hidden checkbox/radio inputs */
+/* The orange stops keep white text at 4.5:1 or more over the whole gradient (#cc4a10 is 4.6:1). */
 .dd .btn{cursor:pointer;color:#fff;border-radius:999px;padding:7px 16px;font-size:13px;font-weight:800;display:inline-block;
-  background:linear-gradient(180deg,#ff8a3d,#e8430c);box-shadow:0 3px 0 #9a3412,0 0 12px rgba(255,140,0,.55);
+  background:linear-gradient(180deg,#cc4a10,#a3360b);box-shadow:0 3px 0 #9a3412,0 0 12px rgba(255,140,0,.55);
   text-shadow:0 1px 0 rgba(0,0,0,.25)}
 .dd .btn:hover{transform:translateY(1px);box-shadow:0 2px 0 #9a3412,0 0 18px rgba(255,140,0,.8)}
 .dd .btn:active{transform:translateY(3px);box-shadow:0 0 0 #9a3412,0 0 10px rgba(255,140,0,.6)}   /* pressed: sinks onto its shadow */
-.dd .chip-on{background:linear-gradient(180deg,#ff8a3d,#e8430c)!important;border-color:transparent!important;color:#fff!important;
+.dd .chip-on{background:linear-gradient(180deg,#cc4a10,#a3360b)!important;border-color:transparent!important;color:#fff!important;
   animation:dd-neon var(--pulse) ease-in-out infinite}
 
 /* ---- Intensity: lv1 calm / lv2 standard / lv3 full ---- */
 .dd.lv1{--enter:pop}
 .dd.lv1 .ttl{background:none;color:var(--ink);animation:none}
-.dd.lv1 .gold{color:var(--a)!important;background:none;-webkit-text-stroke:0;filter:none;animation:none}
+/* lv1 gold is the dark amber text colour: the accent orange is only 3.4:1 on the light background */
+.dd.lv1 .gold{color:var(--yt)!important;background:none;-webkit-text-stroke:0;filter:none;animation:none}
 .dd.lv1 .shine::after{display:none}
 .dd.lv1 .neon,.dd.lv1 .chip-on{animation:none;box-shadow:0 0 0 2px var(--glow)}
+.dd.lv1 .chip-on{background:#9a3412!important}
+/* selected chips print as an outlined box: white text on a background that is not printed would vanish */
+@media print{.dd .chip-on{background:var(--card)!important;color:#9a3412!important;outline:2px solid #9a3412;outline-offset:-2px}}
 .dd.lv1 .rb{box-shadow:none}
 .dd.lv1 .rb::before{animation:none;background:var(--a)}
 .dd.lv1 .tb.t3,.dd.lv1 .tb.t4{box-shadow:none}

@@ -30,7 +30,6 @@
 .dd .sc-pt .gold{display:inline-block}
 .dd.lv1 .sc-rw{background:#9a3412}
 @media print{.dd .sc-rw{background:none;color:#b91c1c;border:1px solid #b91c1c}}   /* no-background printing must not hide it */
-.dd.lv1 .sc-pn .gold,.dd.lv1 .sc-last .gold{color:var(--yt)!important}   /* the lv1 orange is under 4.5:1 on the pale squares */
 @media (max-width:560px){
   .dd .ttl{font-size:14px}
   .dd .sc-row{grid-template-columns:repeat(var(--pc),minmax(0,1fr));margin-bottom:10px}
