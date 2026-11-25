@@ -1,48 +1,48 @@
 {
   "pattern": "architecture",
-  "title": "Where does a request go?",
-  "alt": "Browser and mobile app call a CDN, which forwards to the API. The API writes to Postgres and enqueues jobs that a worker consumes.",
+  "title": "リクエストはどこを通る？",
+  "alt": "ブラウザとスマホアプリが CDN を呼び、CDN が API に転送する。API は Postgres に書き込み、キューにジョブを積む。ワーカーがキューから取り出して処理する。",
   "tiers": [
     {
-      "name": "CLIENT",
+      "name": "クライアント",
       "nodes": [
         {
           "id": "web",
-          "label": "Browser",
+          "label": "ブラウザ",
           "sub": "SPA"
         },
         {
           "id": "app",
-          "label": "Mobile app"
+          "label": "スマホアプリ"
         }
       ]
     },
     {
-      "name": "EDGE",
+      "name": "エッジ",
       "nodes": [
         {
           "id": "cdn",
           "label": "CDN",
-          "sub": "cache + WAF"
+          "sub": "キャッシュ + WAF"
         }
       ]
     },
     {
-      "name": "BACKEND",
+      "name": "バックエンド",
       "nodes": [
         {
           "id": "api",
           "label": "API",
-          "sub": "stateless"
+          "sub": "ステートレス"
         },
         {
           "id": "worker",
-          "label": "Worker"
+          "label": "ワーカー"
         }
       ]
     },
     {
-      "name": "DATA",
+      "name": "データ",
       "nodes": [
         {
           "id": "db",
@@ -50,7 +50,7 @@
         },
         {
           "id": "queue",
-          "label": "Queue"
+          "label": "キュー"
         }
       ]
     }
@@ -81,11 +81,11 @@
     {
       "from": "worker",
       "to": "queue",
-      "label": "consume"
+      "label": "取り出す"
     }
   ],
   "focal": [
     "api"
   ],
-  "note": "Hover a box to trace its connections"
+  "note": "箱にマウスを乗せると、つながる線だけが光ります"
 }

@@ -1,39 +1,37 @@
-# Pattern: decompose
+# パターン: decompose
 
-A vague statement ("comply with the law", "make it secure", "improve UX") sits in a dashed box with a warning
-underneath. One click: the box turns solid and glows, 2–6 concrete pieces stamp in one after another, and a
-gold stamp ("Testable!") lands on the corner.
+ふわっとした一文（「法令を守る」「安全にする」「UX を改善する」）が破線の箱に入り、下に警告が出ています。1回クリックすると、箱の線が実線になって光り、2〜6個の具体的な項目が順にスタンプされ、角に金色のスタンプ（「テストできる！」）が押されます。
 
-Use it whenever the point is "this sentence cannot be built or tested until it is broken down".
+「この一文は分解するまで作れないし、テストもできない」と伝えたいときに使います。
 
 ## Spec
 
 ```json
 {
   "pattern": "decompose",
-  "title": "Turn a slogan into requirements",
-  "root": {"kicker": "Vague requirement", "text": "Make the system secure"},
-  "button": "Break it down ▶",
-  "back": "Back",
-  "hint": "You can neither build nor test this sentence",
-  "done": "Testable!",
+  "title": "スローガンを要件に変える",
+  "root": {"kicker": "あいまいな要件", "text": "システムを安全にする"},
+  "button": "分解する ▶",
+  "back": "戻る",
+  "hint": "この一文のままでは作れないし、テストもできない",
+  "done": "テストできる！",
   "children": [
-    {"tag": "Access", "text": "Admins must sign in with MFA"}
+    {"tag": "アクセス", "text": "管理者は MFA でサインインする"}
   ],
-  "note": "Example content"
+  "note": "例として作った内容です"
 }
 ```
 
-| Field | Required | Notes |
+| フィールド | 必須 | 補足 |
 |---|---|---|
-| `root.text` | yes | The vague statement |
-| `root.kicker` | no | Small label above it ("External requirement", "Slogan") |
-| `children[].text` | yes | One concrete, checkable item |
-| `children[].tag` | no | Category label. Keep it ≤ 14 ASCII / 7 CJK characters; it must not wrap |
-| `button`, `back`, `hint`, `done` | no | Button labels, warning under the button, gold stamp text |
-| `title` | no | Omit when the surrounding text already introduces it |
+| `root.text` | はい | ふわっとした一文 |
+| `root.kicker` | いいえ | 上に付く小さなラベル（「外部からの要求」「スローガン」） |
+| `children[].text` | はい | 具体的で確かめられる項目を1つ |
+| `children[].tag` | いいえ | 分類ラベル。ASCII 14文字、CJK 7文字まで。折り返さないこと |
+| `button`, `back`, `hint`, `done` | いいえ | ボタンの文言、ボタンの下の警告、金色のスタンプの文字 |
+| `title` | いいえ | 前後の本文で紹介済みなら省く |
 
-## Limits
+## 上限
 
-- 2–6 children (build.py stops outside that range). Up to 5 sit in one row on wide screens; 6 becomes 3×2. Phones stack them.
-- Print/PDF shows the broken-down state with the stamp, without the button.
+- 子は2〜6個（範囲外だと build.py が止まります）。広い画面では5個までが1行に並び、6個は3×2になります。スマホでは縦に積みます。
+- 印刷と PDF では、ボタンなしで、分解後の状態をスタンプ付きで表示します。

@@ -1,17 +1,55 @@
 {
   "pattern": "explorer",
-  "title": "The API call failed. Now what?",
-  "bad_label": "Common mistake",
-  "good_label": "Do this instead",
+  "title": "API 呼び出しが失敗した。どうする？",
   "cases": [
-    {"label": "400 Bad Request", "situation": "The request itself is wrong", "bad": "Retry the same request", "good": "Show which field is invalid and stop"},
-    {"label": "401 Unauthorized", "situation": "The token expired", "bad": "Log the user out silently", "good": "Refresh the token once, then retry"},
-    {"label": "403 Forbidden", "situation": "No permission", "bad": "Retry with backoff", "good": "Explain who can grant access"},
-    {"label": "404 Not Found", "situation": "The resource is gone", "bad": "Show a blank screen", "good": "Say it was deleted and offer a way back"},
-    {"label": "409 Conflict", "situation": "Someone else changed it", "bad": "Overwrite their change", "good": "Show both versions and let the user choose"},
-    {"label": "429 Too Many", "situation": "You are rate limited", "bad": "Retry immediately in a loop", "good": "Wait for Retry-After, then retry"},
-    {"label": "500 Server Error", "situation": "The server broke", "bad": "Show the raw stack trace", "good": "Retry with backoff and show a friendly error"},
-    {"label": "Timeout", "situation": "No answer in time", "bad": "Assume it failed and resend", "good": "Check status with an idempotency key first"}
+    {
+      "label": "400 Bad Request",
+      "situation": "リクエストそのものが間違っている",
+      "bad": "同じリクエストをもう一度送る",
+      "good": "どの項目が不正かを表示して止める"
+    },
+    {
+      "label": "401 Unauthorized",
+      "situation": "トークンの期限切れ",
+      "bad": "黙ってログアウトさせる",
+      "good": "トークンを1回だけ更新して再送する"
+    },
+    {
+      "label": "403 Forbidden",
+      "situation": "権限がない",
+      "bad": "間隔をあけて再試行する",
+      "good": "誰に権限をもらえばいいかを案内する"
+    },
+    {
+      "label": "404 Not Found",
+      "situation": "対象が消えている",
+      "bad": "真っ白な画面を出す",
+      "good": "削除されたことを伝え、戻り先を出す"
+    },
+    {
+      "label": "409 Conflict",
+      "situation": "他の人が先に更新した",
+      "bad": "相手の変更を上書きする",
+      "good": "両方の版を見せて、利用者に選ばせる"
+    },
+    {
+      "label": "429 Too Many",
+      "situation": "回数制限にかかった",
+      "bad": "すぐにループで再送する",
+      "good": "Retry-After の秒数だけ待って再送する"
+    },
+    {
+      "label": "500 Server Error",
+      "situation": "サーバー側で壊れた",
+      "bad": "スタックトレースをそのまま出す",
+      "good": "間隔をあけて再試行し、わかりやすいエラーを出す"
+    },
+    {
+      "label": "Timeout",
+      "situation": "時間内に返事がない",
+      "bad": "失敗とみなして送り直す",
+      "good": "冪等キーで処理状況を先に確かめる"
+    }
   ],
-  "note": "Example content for the explorer pattern"
+  "note": "explorer のサンプルです"
 }

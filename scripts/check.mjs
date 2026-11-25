@@ -100,6 +100,37 @@ const PROBE = () => {
       if (tb.left < rb.left - 1 || tb.right > rb.right + 1) { clipped.push(`${r.id} «${tx.textContent.slice(0, 24)}» wider than its node`); break; }
     }
   }
+  // Architecture tier names: inside their band, and no edge running through the text (user units of the SVG)
+  for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
+    if (!svg.getClientRects().length) continue;
+    const bands = [...svg.querySelectorAll("rect.ar-band")].map((b) => b.getBBox());
+    const paths = [...svg.querySelectorAll("path.ar-base")];
+    for (const t of svg.querySelectorAll("text.ar-tier")) {
+      const tb = t.getBBox();
+      const band = bands.find((b) => tb.y >= b.y - 2 && tb.y + tb.height <= b.y + b.height + 2 && tb.x < b.x + b.width && tb.x + tb.width > b.x);
+      const name = `${r.id} tier «${t.textContent.slice(0, 24)}»`;
+      if (!band || tb.x < band.x - 1 || tb.x + tb.width > band.x + band.width + 1) { clipped.push(`${name} outside its band`); continue; }
+      const crossed = paths.some((pth) => { const L = pth.getTotalLength();
+        for (let i = 0; i <= 200; i++) { const q = pth.getPointAtLength(L * i / 200);
+          if (q.x > tb.x + 1 && q.x < tb.x + tb.width - 1 && q.y > tb.y + 2 && q.y < tb.y + tb.height - 2) return true; }
+        return false; });
+      if (crossed) clipped.push(`${name} crossed by an edge`);
+      const onLabel = [...svg.querySelectorAll("rect.ar-elabel-bg")].some((lr) => { const l = lr.getBBox();
+        return l.x < tb.x + tb.width && l.x + l.width > tb.x && l.y < tb.y + tb.height && l.y + l.height > tb.y; });
+      if (onLabel) clipped.push(`${name} under an edge label`);
+    }
+  }
+  // Edge labels must not sit under a node box (nodes are drawn after edges and would hide them)
+  for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
+    if (!svg.getClientRects().length) continue;
+    const nodes = [...svg.querySelectorAll(".ar-node rect")].map((n) => n.getBBox());
+    for (const lt of svg.querySelectorAll("text.ar-elabel")) {   // the text itself and its background (sized from an estimate)
+      const boxes = [lt.getBBox(), lt.previousElementSibling?.getBBox()].filter(Boolean);
+      const hit = (l) => nodes.some((n) => l.x < n.x + n.width - 3 && l.x + l.width > n.x + 3 && l.y < n.y + n.height - 3 && l.y + l.height > n.y + 3);
+      if (boxes.some(hit))   // 3 SVG units of slack: touching a corner is fine
+        clipped.push(`${r.id} edge label «${lt.textContent.slice(0, 24)}» under a node`);
+    }
+  }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     minFont: 99, minFontAt: "", wrapped: [], fastLoops: [], slides: [] };
   for (const el of document.querySelectorAll("body *")) {
@@ -126,6 +157,10 @@ const PROBE = () => {
 async function runStates(page, where, maxH, shotFn) {
   const labels = await page.$$("label[for]");
   const check = async (state) => {
+    // Finish entrance animations (stamp/pop) first: mid-animation a stamp is scaled up to 2.2x and would read
+    // as overflow. Their end state is the base style, so this measures what the reader sees once it settles.
+    await page.evaluate(() => document.getAnimations().forEach((a) => {
+      if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish(); }));
     const r = await page.evaluate(PROBE);
     const w = `${where} [${state}]`;
     if (maxH && r.h > maxH) fail(w, `height ${r.h}px > ${maxH}px`);

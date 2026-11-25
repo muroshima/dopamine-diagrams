@@ -1,17 +1,13 @@
-# Target: standalone HTML
+# ターゲット: 単体の HTML
 
 ```sh
 python3 scripts/build.py a.json b.json --target standalone -o page.html --title "Page title"
 node scripts/check.mjs page.html --shots .check/page
 ```
 
-One self-contained page; diagrams are stacked in a 760px column. No external files, so it can be attached,
-hosted anywhere, or opened from disk.
+それだけで完結する1ページです。図は760px の列に縦に並びます。外部ファイルを使わないので、添付しても、どこに置いても、ディスクから直接開いても表示できます。
 
-- Dark mode follows the OS (`prefers-color-scheme`) unless `<html data-theme="light|dark">` is set.
-- No height limit, but keep each diagram under one screen; a diagram that needs scrolling is two diagrams.
-- The checker renders at 1200, 768 and 375px in light and dark.
-- To embed in another site, copy the `<div class="dd …">` and the **second** `<style>` block only. The first
-  block styles this page (`body` background and padding) and would change the host page. The second block is
-  scoped to `.dd` and the diagrams' unique ids; it also contains the rules of the other diagrams on the page,
-  which are harmless. For a single diagram, build a page with just that spec.
+- ダークモードは OS の設定（`prefers-color-scheme`）に従います。`<html data-theme="light|dark">` を指定した場合はそちらが優先です。
+- 高さの上限はありません。ただし図1つは1画面に収めます。スクロールが要る図は、2つに分けるべき図です。
+- 検査スクリプトは、幅1200、768、375px で、ライトとダークの両方を描画します。
+- ほかのサイトに埋め込むときは、`<div class="dd …">` と **2つ目の** `<style>` ブロックだけをコピーします。1つ目のブロックはこのページ用のスタイル（`body` の背景と余白）で、埋め込み先のページを変えてしまいます。2つ目のブロックは `.dd` と各図の一意な id に限定されています。同じページのほかの図のルールも入っていますが、害はありません。図を1つだけ使うなら、その spec だけでページを作ってください。

@@ -1,15 +1,27 @@
 {
   "pattern": "proportion",
-  "title": "100 support tickets, summarised by AI",
-  "button": "Read them yourself ▶",
-  "back": "Back to the summary",
+  "title": "問い合わせ100件を AI が要約したら",
+  "button": "自分で読んでみる ▶",
+  "back": "要約に戻る",
   "groups": [
-    {"label": "Password reset", "count": 40},
-    {"label": "Billing question", "count": 32},
-    {"label": "Other", "count": 27}
+    {
+      "label": "パスワード再設定",
+      "count": 40
+    },
+    {
+      "label": "請求の質問",
+      "count": 32
+    },
+    {
+      "label": "その他",
+      "count": 27
+    }
   ],
-  "say": "AI: \"Fix password reset and billing first\"",
-  "say_sub": "Counting the majority is what AI does well",
-  "gem": {"title": "The one that matters", "text": "One ticket filed under \"Other\" was the first sign of a data leak", "sub": "Deciding what matters still needs someone who knows the domain"},
-  "note": "Counts are illustrative"
+  "say": "AI「パスワード再設定と請求から直しましょう」",
+  "say_sub": "多数派を数えるのは AI の得意分野",
+  "gem": {
+    "text": "「その他」に入っていた1件が、情報漏えいの最初の兆しだった",
+    "sub": "何が大事かを決めるには、まだ業務を知っている人が要る"
+  },
+  "note": "件数は説明用の架空の値です"
 }

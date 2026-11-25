@@ -79,12 +79,60 @@ def text_w(s, fs):
     return sum(fs if ord(c) > 0x2E7F else fs * 0.6 for c in str(s))
 
 
+def tier_w(s, fs):
+    """Upper bound for a tier name (.ar-tier is weight 800 with .04em tracking; bold capitals ~0.75em, M/W ~1em).
+    It is a guess: build.py warns from it, check.mjs measures the real text."""
+    def one(c):
+        o = ord(c)
+        if o >= 0x1F000 or 0x2600 <= o <= 0x27BF or 0x2B00 <= o <= 0x2BFF or 0x2300 <= o <= 0x23FF:   # emoji
+            return 1.3
+        if 0xFF61 <= o <= 0xFF9F:     # half-width katakana
+            return 0.55
+        if o >= 0x2000:               # CJK, and symbols (arrows, boxes, dashes) that Japanese fonts draw full width
+            return 1.0
+        if c in "MWmw@%&":
+            return 1.0
+        if c.isupper() or c.isdigit():
+            return 0.76
+        return 0.32 if c == " " else 0.6
+    return sum((one(c) + .04) * fs for c in str(s))
+
+
+# Default UI words: spec["lang"] if given, else Japanese when any text has kana, else English (see spec_lang).
+DEFAULTS = {
+    "ja": {"bad_label": "よくある間違い", "good_label": "こうする", "done": "完了！", "decompose_button": "分解する ▶",
+           "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
+           "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
+           "before": "ビフォー", "after": "アフター"},
+    "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
+           "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
+           "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
+           "gem_title": "The one that matters", "before": "Before", "after": "After"},
+}
+
+
+def spec_lang(spec):
+    """"lang" in the spec wins; otherwise Japanese when any text has kana (kanji alone could be Chinese or a place name)."""
+    lang = spec.get("lang")
+    if lang is not None:
+        if not isinstance(lang, str) or lang not in DEFAULTS:
+            fail(f"lang must be one of {sorted(DEFAULTS)}; got {lang!r:.40}")
+        return lang
+    # hiragana, katakana (without the middle dot U+30FB, common in non-Japanese text too), half-width katakana
+    return "ja" if re.search(r"[\u3041-\u309f\u30a0-\u30fa\u30fc-\u30ff\u31f0-\u31ff\uff66-\uff9f]",
+                             json.dumps(spec, ensure_ascii=False)) else "en"
+
+
+def T(spec, key):
+    return DEFAULTS[spec_lang(spec)][key]
+
+
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
     need(spec, "title")
     cases = items_of(spec, "cases", dict, ("label", "good"), lo=2, hi=8)
-    bad_l = spec.get("bad_label", "Common mistake")
-    good_l = spec.get("good_label", "Do this instead")
+    bad_l = spec.get("bad_label", T(spec, "bad_label"))
+    good_l = spec.get("good_label", T(spec, "good_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
                   for i in range(len(cases)))
     labs = "".join(f'<label for="{u}-m{i}"><span class="ex-no">{i+1:02d}</span>{E(c["label"])}</label>'
@@ -122,9 +170,9 @@ def render_decompose(spec, u, lv):
     ttl = f'<div class="ttl">{E(spec["title"])}</div>' if spec.get("title") else ""
     body = (f'<input class="h" type="checkbox" id="{u}-s">{ttl}'
             f'<div class="dc-root"><span class="dc-kick">{E(root.get("kicker", ""))}</span>{E(root["text"])}'
-            f'<span class="dc-done gold">{E(spec.get("done", "Done!"))}</span></div>'
-            f'<div class="dc-mid"><label for="{u}-s" class="btn shine"><span class="dc-t1">{E(spec.get("button", "Break it down ▶"))}</span>'
-            f'<span class="dc-t2">{E(spec.get("back", "Back"))}</span></label>'
+            f'<span class="dc-done gold">{E(spec.get("done", T(spec, "done")))}</span></div>'
+            f'<div class="dc-mid"><label for="{u}-s" class="btn shine"><span class="dc-t1">{E(spec.get("button", T(spec, "decompose_button")))}</span>'
+            f'<span class="dc-t2">{E(spec.get("back", T(spec, "back")))}</span></label>'
             f'<div class="dc-hint">{E(spec.get("hint", ""))}</div></div>'
             f'<div class="dc-kids" style="grid-template-columns:repeat({cols},1fr)">{kd}</div>')
     s = f"#{u}-s:checked"
@@ -158,23 +206,56 @@ def _arch_svg(spec, u, mode, focal):
     if mode == "wide":
         # Column widths come from the node text, gaps from the edge labels between neighbouring tiers.
         # If that needs more than 600 user units, the viewBox widens and every font grows with it, so text
-        # still renders >= 12px when the embed is only 529px wide (Zenn PC at ~561px). Iterate to settle.
+        # still renders >= 12px when the embed is only 529px wide (Zenn PC at ~561px). solve() picks the font.
         W, top, gap, MINW, NARROWEST = 600, 40, 18, 600, 529
-        FS, FSS, FSE = 16, 14, 14
-        for _ in range(4):
-            colw = [max(max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]) for t in tiers]
+
+        def measure(FS, FSS, FSE, with_names):
+            colw = [max([tier_w(t["name"], FSS) + 4 if with_names else 0]
+                        + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]])
+                    for t in tiers]
             gaps = []
             for ti in range(T - 1):
                 labs = [text_w(e["label"], FSE) + 18 for e in edges
                         if e.get("label") and sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]]
                 gaps.append(max([34] + labs))
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
-            W = max(MINW, need)
-            small = max(14, round(12.3 * W / NARROWEST * 2) / 2)
-            if small == FSS:
-                break
-            FS, FSS, FSE = small + 2, small, small
+            return colw, gaps, need, max(MINW, need)
+
+        def solve(with_names):
+            # Fonts scale with W (the SVG is squeezed to NARROWEST px) and W grows with the fonts. Take the
+            # smallest font, in 0.5 steps up to FMAX, whose text still renders >= 12.3px at NARROWEST.
+            # None fits -> text grows faster than W; the caller warns and check.mjs reports small text.
+            # FMAX bounds the search; past it the fixed parts (line widths, corner radii) look tiny anyway.
+            FMAX = 64
+            f = 14.0
+            while f <= FMAX:
+                colw, gaps, need, W = measure(f + 2, f, f, with_names)
+                if round(12.3 * W / NARROWEST * 2) / 2 <= f:
+                    return True, f + 2, f, f, colw, gaps, need, W
+                f += 0.5
+            return (False, 16.0, 14.0, 14.0) + measure(16, 14, 14, with_names)
+
+        ok, FS, FSS, FSE, colw, gaps, need, W = solve(True)
+        if not ok:
+            # Long tier names: size the fonts from the nodes alone, then let the names widen their columns.
+            ok, FS, FSS, FSE, colw, gaps, need, W = solve(False)
+            if not ok:
+                print("WARN: architecture has too much text side by side (node labels or edge labels); "
+                      "shorten them or use fewer tiers", file=sys.stderr)
+            W0 = W
+            for ti, t in enumerate(tiers):
+                colw[ti] = max(colw[ti], tier_w(t["name"], FSS) + 4)
+            need = 12 + sum(c + 16 for c in colw) + sum(gaps)
+            W = max(W, need)
+            if ok and W > W0 and FSS * NARROWEST / W < 12:
+                print(f"WARN: architecture tier names are too long for the side-by-side layout "
+                      f"(by estimate, text may drop below 12px at {NARROWEST}px); if check.mjs reports small text, "
+                      f"shorten them", file=sys.stderr)
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
+        ty = max(27, math.ceil(1.1 * FSS + 6))   # tier name baseline: ascent ~1em (Japanese), ~1.1em (emoji); band top y=6
+        top = max(top, ty + math.ceil(0.3 * FSS) + 6)   # room for the descent before the first node
+        if any(e.get("label") and tid[e["from"]] == tid[e["to"]] for e in edges):
+            gap = max(gap, FSE + 14)   # a same-tier edge label sits between two stacked nodes
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
@@ -183,7 +264,7 @@ def _arch_svg(spec, u, mode, focal):
             bw = colw[ti] + 16
             cx = x + bw / 2
             out.append(f'<rect class="ar-band" x="{x:.1f}" y="6" width="{bw:.1f}" height="{H-8:.1f}" rx="10"/>'
-                       f'<text class="ar-tier" x="{cx:.1f}" y="27">{E(t["name"])}</text>')
+                       f'<text class="ar-tier" x="{cx:.1f}" y="{ty}">{E(t["name"])}</text>')
             k = len(t["nodes"])
             y0 = top + (maxn - k) * (nh + gap) / 2
             for ni, n in enumerate(t["nodes"]):
@@ -191,17 +272,19 @@ def _arch_svg(spec, u, mode, focal):
             if ti < T - 1:
                 x += bw + gaps[ti] + extra
     else:
-        # Tiers become rows. Each row is a band with its name at the top-left, so edges never cross the name.
+        # Tiers become rows. Each row is a band with its name along the top edge, where no edge crosses it.
         W = 320
         FS, FSS, FSE = 15, 13, 13
         nh = 48 if any(n.get("sub") for t in tiers for n in t["nodes"]) else 34
         rowgap = 26
         y = 6
+        band_top, names = [], []
         for ti, t in enumerate(tiers):
+            band_top.append(y)
             k = len(t["nodes"])
             bh = 22 + nh + 8
-            out.append(f'<rect class="ar-band" x="2" y="{y:.1f}" width="{W-4}" height="{bh:.1f}" rx="10"/>'
-                       f'<text class="ar-tier" x="12" y="{y+16:.1f}" style="text-anchor:start">{E(t["name"])}</text>')
+            out.append(f'<rect class="ar-band" x="2" y="{y:.1f}" width="{W-4}" height="{bh:.1f}" rx="10"/>')
+            names.append((t["name"], y))
             cy = y + 22 + nh / 2
             for ni, n in enumerate(t["nodes"]):
                 cx = W * (ni + .5) / k
@@ -218,7 +301,7 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     # edges first (under nodes)
-    eds = []
+    eds, curves, lrects = [], [], []
     for e in edges:
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
@@ -239,15 +322,57 @@ def _arch_svg(spec, u, mode, focal):
             else:
                 p0 = (a[0], a[1] + a[3]/2); p3 = (b[0], b[1] - b[3]/2); dy = (p3[1]-p0[1]) * .5
                 p1 = (p0[0], p0[1]+dy); p2 = (p3[0], p3[1]-dy)
+        curves.append((p0, p1, p2, p3))
         d = f"M{p0[0]:.1f} {p0[1]:.1f} C{p1[0]:.1f} {p1[1]:.1f},{p2[0]:.1f} {p2[1]:.1f},{p3[0]:.1f} {p3[1]:.1f}"
         lab = ""
         if e.get("label"):
             mx, my = _bez(p0, p1, p2, p3)
+            if mode != "wide" and b[4] == a[4] + 1:
+                # Phone rows: the plain midpoint lands on the next band's top edge, where the tier name sits.
+                # Put the label in the middle of the gap between the two bands instead (y is monotonic in t).
+                target, lo_t, hi_t = band_top[b[4]] - rowgap / 2, 0.0, 1.0
+                for _ in range(30):
+                    mid = (lo_t + hi_t) / 2
+                    lo_t, hi_t = (mid, hi_t) if _bez(p0, p1, p2, p3, mid)[1] < target else (lo_t, mid)
+                mx, my = _bez(p0, p1, p2, p3, lo_t)
             lw = text_w(e["label"], FSE) + 10
+            lrects.append((mx - lw / 2, mx + lw / 2, my - FSE / 2 - 4, my + FSE / 2 + 4))
+            for nid2, (ncx, ncy, nw2, nh2, _) in pos.items():
+                if (mx - lw / 2 < ncx + nw2 / 2 - 3 and mx + lw / 2 > ncx - nw2 / 2 + 3
+                        and my - FSE / 2 - 4 < ncy + nh2 / 2 - 3 and my + FSE / 2 + 4 > ncy - nh2 / 2 + 3):
+                    print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) sits on node '{nid2}' "
+                          f"in the {mode} layout and will be hidden; shorten it, drop it, or connect neighbouring nodes",
+                          file=sys.stderr)
+                    break
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
+    if mode != "wide":
+        # Tier names sit on the top edge of their band, at the leftmost x (inside 12..W-12) that no edge crosses.
+        # Long Japanese names reach the first node's column, where edges usually enter.
+        for name, by in names:
+            nw = tier_w(name, FSS)
+            if nw > W - 24:
+                print(f"WARN: architecture tier name '{name}' is too long for the phone layout "
+                      f"(~{nw:.1f} of {W - 24} units); shorten it", file=sys.stderr)
+                out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+                continue
+            xs = [x for p0, p1, p2, p3 in curves for t in [i / 80 for i in range(81)]
+                  for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
+            spans = [(x0l, x1l) for x0l, x1l, y0l, y1l in lrects if y0l < by + 22 and y1l > by]
+            cands = [12 + 4 * k for k in range(int((W - 24 - nw) // 4) + 1)] + [W - 12 - nw]
+            free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)
+                    and not any(a < x0 + nw + 4 and b > x0 - 4 for a, b in spans)]
+            if not free:
+                print(f"WARN: architecture tier '{name}': edges or edge labels may cross its name on the phone layout "
+                      f"(estimated width); if check.mjs reports this tier, shorten the name or route fewer edges into it",
+                      file=sys.stderr)
+            x0 = free[0] if free else 12
+            if x0 == cands[-1] and x0 > 12:   # right corner: anchor at the end so a wider-than-estimated name grows left
+                out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
+            else:
+                out.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():
@@ -321,14 +446,14 @@ def render_compare(spec, u, lv):
         items = "".join(
             f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}">'
             f'{E(it["text"] if isinstance(it, dict) else it)}</div>' for it in d.get("items", []))
-        head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", side))}</span>{E(d.get("title", ""))}</div>'
+        head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
         return head + f'<div class="cp-items">{items}</div>' + msg
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
-            f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", "Show the fix ▶"))}</span>'
-            f'<span class="cp-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
+            f'<span class="cp-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
             f'<div class="cp-stage"><div class="cp-panel cp-before">{panel("Before", "before", "bad")}</div>'
             f'<div class="cp-panel cp-after rb"><div class="in">{panel("After", "after", "good")}</div></div></div>')
     s = f"#{u}-s:checked"
@@ -446,8 +571,8 @@ def render_ladder(spec, u, lv):
         if text_w(l["name"], 12) > barw * 2:
             print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
     n = len(lvls)
-    now_l = spec.get("now_label", "Now")
-    next_l = spec.get("next_label", "Next move")
+    now_l = spec.get("now_label", T(spec, "now_label"))
+    next_l = spec.get("next_label", T(spec, "next_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
     bars = ""
     for i, l in enumerate(lvls):
@@ -455,7 +580,7 @@ def render_ladder(spec, u, lv):
         top = i == n - 1 and spec.get("top_focal", True)
         bars += (f'<label for="{u}-l{i}" class="ld-b ld-b{i}{" ld-top rb" if top else ""}" style="height:{h:.0f}%">'
                  f'<span class="in"><span class="ld-n">{E(l.get("short", f"Lv.{i+1}"))}</span><span class="ld-nm">{E(l["name"])}</span></span></label>')
-    pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", "Where are you? Click a step"))}</div>'
+    pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", T(spec, "prompt")))}</div>'
     pans += "".join(f'<div class="ld-p ld-q{i}"><b class="ld-pt">{E(l.get("short", f"Lv.{i+1}"))} {E(l["name"])}</b>'
                     f'<div>{E(now_l)}: {E(l.get("now", ""))}</div>'
                     f'<div class="ld-nx">{E(next_l)} ▶ <span class="gold">{E(l.get("next", ""))}</span></div></div>' for i, l in enumerate(lvls))
@@ -506,11 +631,11 @@ def render_proportion(spec, u, lv):
     gem = typed(spec, "gem", dict, {}, required=False)
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="pr-top"><div class="ttl">{E(spec["title"])}</div>'
-            f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", "Look closer ▶"))}</span>'
-            f'<span class="pr-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", T(spec, "proportion_button")))}</span>'
+            f'<span class="pr-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
             f'<div class="pr-g"><div class="pr-dots">{dots}</div><div class="pr-side">'
             f'<div class="pr-v1">{lgd}<p class="pr-say">{E(spec.get("say", ""))}</p><p class="pr-sub">{E(spec.get("say_sub", ""))}</p></div>'
-            f'<div class="pr-v2"><div class="pr-gemt gold">{E(gem.get("title", "The one that matters"))}</div>'
+            f'<div class="pr-v2"><div class="pr-gemt gold">{E(gem.get("title", T(spec, "gem_title")))}</div>'
             f'<p>{E(gem.get("text", ""))}</p><p class="pr-sub">{E(gem.get("sub", ""))}</p></div></div></div>')
     s = f"#{u}-s:checked"
     glow = ("box-shadow:0 0 0 3px var(--ys),0 0 16px var(--glow),0 0 32px var(--a);animation:dd-gem 1.4s ease-in-out infinite;"
@@ -542,6 +667,7 @@ RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architect
 def build_one(spec, idx, intensity, target):
     if not isinstance(spec, dict):
         fail(f"spec #{idx + 1} must be a JSON object with a 'pattern' field; got {type(spec).__name__}")
+    spec_lang(spec)   # validate "lang" for every pattern, not only those with default words
     pat = spec.get("pattern")
     if pat not in RENDER:
         raise SystemExit(f"unknown pattern: {pat} (known: {', '.join(RENDER)})")
@@ -573,9 +699,6 @@ def minify(css):
     return re.sub(r"\s*([{};:,>])\s*", r"\1", css).strip()
 
 
-def has_cjk(s):
-    return bool(re.search(r"[぀-ヿ㐀-鿿]", s))
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -592,7 +715,7 @@ def main():
         except (OSError, json.JSONDecodeError) as e:
             fail(f"{f}: {e}")
     built = [build_one(s, i, a.intensity, a.target) for i, s in enumerate(specs)]
-    lang = "ja" if has_cjk(json.dumps(specs, ensure_ascii=False)) else "en"
+    lang = "ja" if any(spec_lang(s) == "ja" for s in specs) else "en"
     out = pathlib.Path(a.out)
 
     if a.target == "zenn":

@@ -1,25 +1,19 @@
-# Interactions without JavaScript
+# JavaScript なしの操作
 
-Every clickable state is a hidden `<input type="radio|checkbox" class="h">` plus a `<label for>` that acts as
-the button. CSS reacts with `#id:checked ~ …`.
+クリックで変わる状態は、すべて隠した `<input type="radio|checkbox" class="h">` と、ボタン役の `<label for>` の組で作ります。CSS は `#id:checked ~ …` で反応します。
 
-| Need | Input | Example |
+| やりたいこと | input | 例 |
 |---|---|---|
-| One of N views (tabs, cases) | `radio`, same `name`, first one `checked` | `explorer` |
-| Before / after, show / hide | `checkbox` | `decompose` |
-| Trace one element on hover | none; `svg:has(.n-x:hover) .edge:not(.x-x)` | `architecture` |
+| N 個のうち1つを表示（タブ、ケース） | `radio`。`name` をそろえ、先頭を `checked` にする | `explorer` |
+| ビフォーとアフター、表示と非表示 | `checkbox` | `decompose` |
+| マウスを乗せた要素のつながりをたどる | なし。`svg:has(.n-x:hover) .edge:not(.x-x)` | `architecture` |
 
-## Rules
+## ルール
 
-1. **Inputs come first** inside `.dd`, before everything they control. `~` only reaches later siblings, so the
-   input must be a sibling of (an ancestor of) the controlled elements. Nesting the input inside a panel
-   breaks every selector.
-2. **Unique ids per diagram.** Slides and pages hold several diagrams; build.py prefixes ids with the diagram id
-   (`dd3f2a1c-m0`). Never hand-write ids like `tab1`.
-3. **The label text must change too**, not only the colour (e.g. "Break it down ▶" becomes "Back").
-4. **Keyboard**: hidden inputs stay focusable. Add a `:focus-visible` outline on the matching label
-   (build.py does this for every generated state).
-5. **Touch**: `:hover` effects are a bonus. Nothing important may depend on hover alone.
-6. **Print**: decide which state a PDF should show and add an `@media print` rule for it
-   (`decompose` does this).
-7. **Zenn**: checkbox and radio are the only inputs that render. `<button>` and text inputs are hidden.
+1. **input は先頭に置きます。** `.dd` の中で、操作対象のどれよりも前に置きます。`~` は後ろの兄弟要素にしか届きません。そのため input は、操作対象（またはその祖先）の兄弟にします。input をパネルの中に入れると、セレクタが全部効かなくなります。
+2. **id は図ごとに一意にします。** スライドやページには図が複数入ります。build.py は id の頭に図の id を付けます（`dd3f2a1c-m0`）。`tab1` のような id を手で書かないでください。
+3. **色だけでなく、ラベルの文言も変えます**（例: 「分解する ▶」が「戻る」に変わる。英語の spec では "Break it down ▶" が "Back" に変わる）。
+4. **キーボード**: 隠した input もフォーカスできます。対応するラベルに `:focus-visible` の枠線を付けます（build.py は生成するすべての状態にこれを付けます）。
+5. **タッチ**: `:hover` の効果はおまけです。大事なことを hover だけに頼らないでください。
+6. **印刷**: PDF でどの状態を見せるかを決め、`@media print` のルールを足します（`decompose` がそうしています）。
+7. **Zenn**: 表示される input は checkbox と radio だけです。`<button>` やテキスト入力は隠されます。

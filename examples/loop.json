@@ -1,9 +1,18 @@
 {
   "pattern": "loop",
-  "title": "Requirements keep moving after launch",
-  "goal": "Goal",
-  "steps": ["Elicit", "Specify", "Build", "Operate", "Feedback"],
-  "center": {"text": "Again", "sub": "change is the default"},
-  "back_label": "Goal changed? Go back to the top",
-  "note": "Example content for the loop pattern"
+  "title": "リリース後も要求は動き続ける",
+  "goal": "目的",
+  "steps": [
+    "引き出す",
+    "仕様にする",
+    "作る",
+    "運用する",
+    "声を集める"
+  ],
+  "center": {
+    "text": "もう一周",
+    "sub": "変わるのが前提"
+  },
+  "back_label": "目的が変わったら最初に戻る",
+  "note": "loop のサンプルです"
 }

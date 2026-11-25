@@ -1,0 +1,9 @@
+{
+  "pattern": "loop",
+  "title": "Requirements keep moving after launch",
+  "goal": "Goal",
+  "steps": ["Elicit", "Specify", "Build", "Operate", "Feedback"],
+  "center": {"text": "Again", "sub": "change is the default"},
+  "back_label": "Goal changed? Go back to the top",
+  "note": "Example content for the loop pattern"
+}

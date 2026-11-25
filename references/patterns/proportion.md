@@ -1,35 +1,33 @@
-# Pattern: proportion
+# パターン: proportion
 
-100 dots coloured by group, with a legend and what a summary would conclude ("fix the big groups first").
-One click fades every dot except one, which turns gold with rotating rays, and the side text explains why that
-single item matters more than the majority.
+グループごとに色分けした100個の点と凡例、そして要約が出しそうな結論（「大きいグループから直す」）を並べます。1回クリックすると、1個を除くすべての点が薄くなります。残った1個は金色になって光線が回り、横の文が、その1件がなぜ多数派より大事なのかを説明します。
 
-Use it for "the average hides the important case": rare but critical tickets, minority users, outliers.
+「平均が大事な1件を隠す」ことを見せるのに使います。まれでも重大な問い合わせ、少数派のユーザー、外れ値などです。
 
 ## Spec
 
 ```json
 {
   "pattern": "proportion",
-  "title": "100 support tickets, summarised by AI",
-  "button": "Read them yourself ▶",
-  "back": "Back to the summary",
-  "groups": [{"label": "Password reset", "count": 40}, {"label": "Billing question", "count": 32}, {"label": "Other", "count": 27}],
-  "say": "AI: \"Fix password reset and billing first\"",
-  "say_sub": "Counting the majority is what AI does well",
-  "gem": {"title": "The one that matters", "text": "One ticket filed under \"Other\" was the first sign of a data leak", "sub": "…"},
-  "note": "Counts are illustrative"
+  "title": "問い合わせ100件を AI が要約すると",
+  "button": "自分で読む ▶",
+  "back": "要約に戻る",
+  "groups": [{"label": "パスワード再設定", "count": 40}, {"label": "請求の質問", "count": 32}, {"label": "その他", "count": 27}],
+  "say": "AI「パスワード再設定と請求から直しましょう」",
+  "say_sub": "多数派を数えるのは AI の得意分野",
+  "gem": {"title": "見落としてはいけない1件", "text": "「その他」に入っていた1件が、情報漏えいの最初の兆候だった", "sub": "…"},
+  "note": "件数は説明用の値です"
 }
 ```
 
-| Field | Notes |
+| フィールド | 補足 |
 |---|---|
-| `groups[].count` | Must add up to **99**; the 100th dot is the gem, hidden in the last group (legend counts it there) |
-| `groups[].color` | Optional plain CSS colour (`#hex`, a name, `rgb()`, `var(--x)`); anything else is rejected. Defaults cycle blue, teal, violet, amber; the last group is grey |
-| `gem_at` | Optional dot index inside the last group (build.py stops otherwise, because the legend counts the gem there); default is its middle |
+| `groups[].count` | 合計を **99** にする。100個目の点が gem で、最後のグループに隠れる（凡例ではそのグループに数える） |
+| `groups[].color` | 任意。普通の CSS の色（`#hex`、色名、`rgb()`、`var(--x)`）。それ以外ははじかれる。既定は青、ティール、紫、琥珀の順に繰り返し、最後のグループは灰色 |
+| `gem_at` | 任意。最後のグループの中の点の番号（凡例が gem をそのグループに数えるため、それ以外だと build.py が止まる）。既定はグループの真ん中 |
 
-## Limits
+## 上限
 
-- 1–8 groups are accepted; 2–5 read well; more turns the legend into a list nobody reads.
-- Say in `note` when the counts are invented.
-- Print/PDF shows the revealed state (faded dots, gold dot, explanation).
+- グループは1〜8個まで受け付けます。読みやすいのは2〜5個です。それより多いと、凡例が誰も読まない一覧になります。
+- 件数を作った場合は `note` にそう書きます。
+- 印刷と PDF では、明かした後の状態（薄くなった点、金色の点、説明）を表示します。

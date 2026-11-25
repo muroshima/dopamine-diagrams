@@ -1,36 +1,33 @@
-# Target: slides (16:9 HTML deck → PDF)
+# ターゲット: slides（16:9 の HTML スライド → PDF）
 
 ```sh
 python3 scripts/build.py title.json flow.json --target slides -o deck.html --title "Deck name"
 node scripts/check.mjs deck.html --shots .check/deck --pdf deck.pdf
 ```
 
-Each spec becomes one `<section class="slide">` of 1280×720. The heading is `slide_title` (falls back to
-`title`); the diagram's own title is hidden so it is not repeated. The diagram is zoomed 1.3× and centred.
+spec 1つが、1280×720 の `<section class="slide">` 1枚になります。見出しは `slide_title` です（なければ `title`）。図そのもののタイトルは、重複しないよう隠します。図は1.3倍にズームし、中央に置きます。
 
-## Presenting
+## 発表
 
-Open `deck.html` in a browser and present full screen. Clicks work as in the web version, so you can reveal
-the breakdown or switch cases live. Scroll or use Page Down between slides.
+`deck.html` をブラウザで開き、全画面で発表します。クリックは Web 版と同じように動くので、その場で分解を見せたり、ケースを切り替えたりできます。スライド間はスクロールか Page Down で移動します。
 
 ## PDF
 
-Print to PDF (the checker's `--pdf`, or Chrome: Print → Save as PDF, margins none, background graphics on).
+PDF に印刷します（検査スクリプトの `--pdf`、または Chrome の「印刷」→「PDF に保存」、余白なし、背景のグラフィックをオン）。
 
-- All motion stops in print. Every element's base style is its final frame, so nothing is half-faded.
-- There are no clicks in a PDF. Each pattern decides what to print:
-  - `decompose` prints the broken-down state (the useful one).
-  - `compare` prints before and after stacked.
-  - `flow` prints the focal step's detail and highlights its circle.
-  - `proportion` prints the revealed state.
-  - `explorer` prints the first case. Put the most important case first, or make one slide per case.
-  - `ladder` prints the bars and the prompt; `architecture` and `loop` print as is.
-- Gold and rainbow text print as solid orange / ink: Chrome draws background-clipped and gradient-filled text
-  in PDFs with artefacts (lines, solid boxes).
-- The checker renders the deck with print media too and fails slides that overflow 720px in print.
+- 印刷ではすべての動きが止まります。どの要素も基本スタイルが最後のフレームなので、半分薄い状態にはなりません。
+- PDF ではクリックできません。何を印刷するかはパターンごとに決まっています。
+  - `decompose` は分解後の状態（役に立つほう）を印刷します。
+  - `compare` はビフォーとアフターを縦に並べて印刷します。
+  - `flow` は焦点のステップの詳細を印刷し、その円を強調します。
+  - `proportion` は明かした後の状態を印刷します。
+  - `explorer` は先頭のケースを印刷します。いちばん大事なケースを先頭に置くか、ケースごとにスライドを分けます。
+  - `ladder` は棒と促しの文を印刷します。`architecture` と `loop` はそのまま印刷します。
+- 金色と虹色の文字は、単色のオレンジ（または本文色）で印刷します。Chrome は背景でクリップした文字やグラデーション塗りの文字を、PDF では乱れた形（線、塗りつぶしの箱）で描くためです。
+- 検査スクリプトは印刷メディアでもスライドを描画し、印刷時に720px からあふれるスライドを FAIL にします。
 
-## Layout limits
+## レイアウトの上限
 
-- Content must fit 720px; the checker fails if a slide overflows.
-- Keep one diagram per slide. For a dense architecture, split overview and detail into two slides.
-- PowerPoint: embed the PDF page as an image, or present the HTML. Editable PPTX export is out of scope.
+- 内容は720px に収めます。スライドがあふれると検査で FAIL になります。
+- 1枚のスライドに図は1つにします。込み入ったアーキテクチャは、全体像と詳細の2枚に分けます。
+- PowerPoint: PDF のページを画像として貼るか、HTML のまま発表します。編集できる PPTX への書き出しは対象外です。
