@@ -203,6 +203,8 @@ def _arch_svg(spec, u, mode, focal):
     out = []
     tid = {n["id"]: ti for ti, t in enumerate(tiers) for n in t["nodes"]}
     idx = {n["id"]: i for i, n in enumerate(n for t in tiers for n in t["nodes"])}   # class names use indices, never ids
+    nord = {n["id"]: ni for t in tiers for ni, n in enumerate(t["nodes"])}   # position inside its tier
+    tnames = []   # tier names, drawn over the edges with a halo so a line passing under one never hides it
     if mode == "wide":
         # Column widths come from the node text, gaps from the edge labels between neighbouring tiers.
         # If that needs more than 600 user units, the viewBox widens and every font grows with it, so text
@@ -214,11 +216,36 @@ def _arch_svg(spec, u, mode, focal):
                         + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]])
                     for t in tiers]
             gaps = []
+            def bulge_need(t):
+                # room beside a column for its same-tier bulges (same nesting rule as the routing, plus slack)
+                grp = sorted((e for e in edges if tid[e["from"]] == tid[e["to"]] == t
+                              and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)),
+                             key=lambda e: abs(nord[e["from"]] - nord[e["to"]]))
+                done, need_ = [], 0
+                for e in grp:
+                    lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
+                    lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+                    off = max(14, lw_i / 2 + 10)
+                    for (lo2, hi2, off2, lw2) in done:
+                        if lo < hi2 and lo2 < hi:
+                            off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
+                    done.append((lo, hi, off, lw_i))
+                    need_ = max(need_, off + lw_i / 2 + 6)
+                return need_ * 1.3 if need_ else 0   # slack: the real offsets follow the curve (see boff)
+
             for ti in range(T - 1):
-                labs = [text_w(e["label"], FSE) + 18 for e in edges
-                        if e.get("label") and sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]]
-                gaps.append(max([34] + labs))
+                # labels of edges between neighbouring tiers, and of edges that skip tiers (on their first hop)
+                labs = [text_w(e["label"], FSE) + 18 for e in edges if e.get("label")
+                        and (sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]
+                             or (tid[e["from"]] == ti and tid[e["to"]] > ti + 1))]
+                # same-tier edges bulge into the gap on their right (the last tier: on its left); both sides add up
+                side_need = bulge_need(ti) if ti < T - 1 else 0
+                if ti == T - 2:
+                    side_need += bulge_need(T - 1)
+                gaps.append(max([34, side_need + 10] + labs))
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
+            if T == 1:   # the single column is centred: room for its bulges on both sides
+                need += 2 * bulge_need(0)
             return colw, gaps, need, max(MINW, need)
 
         def solve(with_names):
@@ -254,17 +281,17 @@ def _arch_svg(spec, u, mode, focal):
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
         ty = max(27, math.ceil(1.1 * FSS + 6))   # tier name baseline: ascent ~1em (Japanese), ~1.1em (emoji); band top y=6
         top = max(top, ty + math.ceil(0.3 * FSS) + 6)   # room for the descent before the first node
-        if any(e.get("label") and tid[e["from"]] == tid[e["to"]] for e in edges):
-            gap = max(gap, FSE + 14)   # a same-tier edge label sits between two stacked nodes
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
         x = 6 if T > 1 else (W - colw[0] - 16) / 2
+        band_x, gapw = [], [g + extra for g in gaps]
         for ti, t in enumerate(tiers):
             bw = colw[ti] + 16
             cx = x + bw / 2
-            out.append(f'<rect class="ar-band" x="{x:.1f}" y="6" width="{bw:.1f}" height="{H-8:.1f}" rx="10"/>'
-                       f'<text class="ar-tier" x="{cx:.1f}" y="{ty}">{E(t["name"])}</text>')
+            band_x.append((x, x + bw))
+            out.append(f'<rect class="ar-band" x="{x:.1f}" y="6" width="{bw:.1f}" height="{H-8:.1f}" rx="10"/>')
+            tnames.append(f'<text class="ar-tier" x="{cx:.1f}" y="{ty}">{E(t["name"])}</text>')
             k = len(t["nodes"])
             y0 = top + (maxn - k) * (nh + gap) / 2
             for ni, n in enumerate(t["nodes"]):
@@ -277,12 +304,12 @@ def _arch_svg(spec, u, mode, focal):
         FS, FSS, FSE = 15, 13, 13
         nh = 48 if any(n.get("sub") for t in tiers for n in t["nodes"]) else 34
         rowgap = 26
+        bh = 22 + nh + 8
         y = 6
         band_top, names = [], []
         for ti, t in enumerate(tiers):
             band_top.append(y)
             k = len(t["nodes"])
-            bh = 22 + nh + 8
             out.append(f'<rect class="ar-band" x="2" y="{y:.1f}" width="{W-4}" height="{bh:.1f}" rx="10"/>')
             names.append((t["name"], y))
             cy = y + 22 + nh / 2
@@ -296,83 +323,333 @@ def _arch_svg(spec, u, mode, focal):
                 pos[n["id"]] = (cx, cy, w, nh, ti)
             y += bh + rowgap
         H = y - rowgap + 4
-    # adjacency for hover dimming
-    nb = {i: set() for i in pos}
+    # ---- edges. Drawn under the tier names and the nodes, so they are routed around nodes rather than through.
+    M = 4   # clearance between a routed line and a node box
+    boxes = [(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2) for (cx, cy, w, h, _) in pos.values()]
+
+    def free_spot(lo, hi, blocks, target):
+        """Point in [lo, hi] outside every (b0, b1) block, nearest to target; None when no gap is wide enough."""
+        ivs, cur = [], lo
+        for b0, b1 in sorted(blocks):
+            if b0 > cur:
+                ivs.append((cur, b0))
+            cur = max(cur, b1)
+        if cur < hi:
+            ivs.append((cur, hi))
+        best = None
+        for i0, i1 in ivs:
+            if i1 - i0 < 6:
+                continue
+            q = (i0 + i1) / 2 if i1 - i0 < 30 else min(max(target, i0 + 8), i1 - 8)
+            if best is None or abs(q - target) < abs(best - target):
+                best = q
+        return best
+
+    def hseg(p, q):   # cubic leaving and entering horizontally
+        mx = (p[0] + q[0]) / 2
+        return (p, (mx, p[1]), (mx, q[1]), q)
+
+    def vseg(p, q):   # cubic leaving and entering vertically
+        my = (p[1] + q[1]) / 2
+        return (p, (p[0], my), (q[0], my), q)
+
+    def straight(p, q):
+        return (p, ((2 * p[0] + q[0]) / 3, (2 * p[1] + q[1]) / 3), ((p[0] + 2 * q[0]) / 3, (p[1] + 2 * q[1]) / 3), q)
+
+    def bulge(p0, p3, axis, g):
+        """Same-tier edge that swings out to coordinate g on axis (0 = x, 1 = y); the curve's apex reaches g."""
+        if axis == 0:
+            return (p0, (p0[0] + (g - p0[0]) * 4 / 3, p0[1]), (p3[0] + (g - p3[0]) * 4 / 3, p3[1]), p3)
+        return (p0, (p0[0], p0[1] + (g - p0[1]) * 4 / 3), (p3[0], p3[1] + (g - p3[1]) * 4 / 3), p3)
+
+    def through(pts, mid):
+        """Segments for a polyline whose odd legs cross a tier band in a straight line."""
+        return [straight(pts[i], pts[i + 1]) if i % 2 else mid(pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
+
+    nb = {i: set() for i in pos}   # adjacency for hover dimming
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
-    # edges first (under nodes)
-    eds, curves, lrects = [], [], []
-    for e in edges:
+    eds, curves, lrects, routes, lpos = [], [], [], [], {}
+    extra_h, lanes = 0, {}
+
+    def bulged(e):
+        return tid[e["from"]] == tid[e["to"]] and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)
+    brank = {}
+    for t_i in range(T):
+        group = sorted((i for i, e in enumerate(edges) if bulged(e) and tid[e["from"]] == t_i),
+                       key=lambda i: abs(nord[edges[i]["from"]] - nord[edges[i]["to"]]))
+        for k, i in enumerate(group):
+            brank[i] = k
+    # Wide: apex offset per bulge, shortest span first. A bulge sits outside every earlier bulge whose span overlaps
+    # its own, past that bulge's label, so nested lines and labels never cross; disjoint ones stay close to the column.
+    boff = {}
+
+    def bulge_x_at(y, ya, yb, off):
+        """x (from the node edge) of a wide bulge from ya to yb with apex offset off, where it crosses height y."""
+        p0, p3, c = (0, ya), (0, yb), (off + 8) * 4 / 3   # the band edge is 8 past the node edge
+        lo_t, hi_t = 0.0, 0.5
+        up = (yb > ya)
+        if not min(ya, yb) <= y <= max(ya, yb):
+            return 0
+        for _ in range(30):   # y is monotonic on each half; search the half that holds y
+            mid = (lo_t + hi_t) / 2
+            yy = _bez(p0, (c, ya), (c, yb), p3, mid)[1]
+            lo_t, hi_t = (mid, hi_t) if (yy < y) == up else (lo_t, mid)
+        t1 = lo_t
+        x1 = _bez(p0, (c, ya), (c, yb), p3, t1)[0]
+        lo_t, hi_t = 0.5, 1.0
+        for _ in range(30):
+            mid = (lo_t + hi_t) / 2
+            yy = _bez(p0, (c, ya), (c, yb), p3, mid)[1]
+            lo_t, hi_t = (mid, hi_t) if (yy < y) == up else (lo_t, mid)
+        x2 = _bez(p0, (c, ya), (c, yb), p3, lo_t)[0]
+        return min(x1, x2)
+
+    for t_i in range(T):
+        done = []   # (lo, hi, label rect relative to the node edge)
+        for i in sorted((i for i in brank if tid[edges[i]["from"]] == t_i), key=lambda i: brank[i]):
+            e = edges[i]
+            a_, b_ = pos[e["from"]], pos[e["to"]]
+            lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
+            lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+            dy = min(a_[3] / 2 - 4, a_[3] * (.22 + .1 * brank[i])) * (1 if b_[1] > a_[1] else -1)
+            ya, yb = a_[1] + dy, b_[1] - dy
+            off = max(14, lw_i / 2 + 10)
+            for _ in range(80):   # push out until this curve passes outside every inner label it spans
+                if all(bulge_x_at(min(max(ly, min(ya, yb)), max(ya, yb)), ya, yb, off) >= lx1 + 6
+                       for (lo2, hi2, (lx1, ly)) in done if lo <= lo2 and hi2 <= hi):
+                    break
+                off += 4
+            boff[i] = off
+            if lw_i:
+                done.append((lo, hi, (off + 8 + lw_i / 2, (a_[1] + b_[1]) / 2)))
+
+    def self_check(routes, pts_of):
+        """Measure the finished drawing and warn about what a reader would misread. The router is a heuristic; this
+        check is the guarantee: a line under a node it does not connect, two lines between different nodes running
+        together, or a label lying on another line always produces a WARN."""
+        for ri, (e, a, b, segs) in enumerate(routes):
+            for nid, (cx, cy, w, h, _) in pos.items():
+                if nid in (e["from"], e["to"]):
+                    continue
+                if any(cx - w / 2 + 3 < x < cx + w / 2 - 3 and cy - h / 2 + 3 < y < cy + h / 2 - 3 for x, y in pts_of[ri]):
+                    print(f"WARN: architecture edge {e['from']}->{e['to']} runs under node '{nid}' in the {mode} layout; "
+                          f"connect neighbouring tiers or put fewer nodes in between", file=sys.stderr)
+                    break
+        dense = pts_of
+
+        def seg_dist(px, py, ax, ay, bx, by):
+            dx, dy = bx - ax, by - ay
+            L = dx * dx + dy * dy
+            t = 0 if L == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / L))
+            return math.hypot(px - ax - t * dx, py - ay - t * dy)
+        grids = []
+        for B in dense:   # 10-unit cells -> indices of the segments touching them
+            g = {}
+            for k in range(len(B) - 1):
+                (x0, y0), (x1, y1) = B[k], B[k + 1]
+                for gx in range(int(min(x0, x1) // 10), int(max(x0, x1) // 10) + 1):
+                    for gy in range(int(min(y0, y1) // 10), int(max(y0, y1) // 10) + 1):
+                        g.setdefault((gx, gy), []).append(k)
+            grids.append(g)
+
+        def by_node(pt, nid):   # within 18 units of the node's box
+            cx, cy, w, h, _ = pos[nid]
+            return abs(pt[0] - cx) <= w / 2 + 18 and abs(pt[1] - cy) <= h / 2 + 18
+        for ri in range(len(routes)):
+            for rj in range(ri + 1, len(routes)):
+                ei, ej = routes[ri][0], routes[rj][0]
+                A, B = dense[ri], dense[rj]
+                grid = grids[rj]
+                near = []
+                for x, y in A:
+                    gx, gy = int(x // 10), int(y // 10)
+                    ks = {k for dx in (-1, 0, 1) for dy in (-1, 0, 1) for k in grid.get((gx + dx, gy + dy), ())}
+                    near.append(any(seg_dist(x, y, *B[k], *B[k + 1]) < 5 for k in ks))
+                # stretches where the two lines are within a stroke of each other; one that starts or ends at a node
+                # both lines share is a fan-out (a line splitting towards two nodes) and reads correctly
+                shared = {ei["from"], ei["to"]} & {ej["from"], ej["to"]}
+                run, longest, start = 0, 0, None
+                for k, flag in enumerate(near + [False]):
+                    if flag:
+                        if run == 0:
+                            start = k
+                        run += 1
+                        continue
+                    if run:
+                        touches = any(by_node(A[start], n) or by_node(A[min(k, len(A)) - 1], n) for n in shared)
+                        if not touches:
+                            seg_len = sum(math.dist(A[m], A[m + 1]) for m in range(start, min(k, len(A) - 1)))
+                            longest = max(longest, seg_len)
+                    run = 0
+                if longest > 24:
+                    print(f"WARN: architecture edges {ei['from']}->{ei['to']} and {ej['from']}->{ej['to']} run together "
+                          f"in the {mode} layout and may read as connected; reorder nodes or drop an edge", file=sys.stderr)
+        for ri, (e, a, b, segs) in enumerate(routes):
+            if not e.get("label") or ri not in lpos:
+                continue
+            x0, x1, y0, y1 = lpos[ri]
+            others = [q for rj, ps in enumerate(pts_of) if rj != ri for q in ps]
+            if any(x0 + 2 < qx < x1 - 2 and y0 + 2 < qy < y1 - 2 for qx, qy in others):
+                print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) lies on another line in the "
+                      f"{mode} layout; shorten the label or drop an edge", file=sys.stderr)
+
+    def no_lane(e, tier_name):
+        print(f"WARN: architecture edge {e['from']}->{e['to']} has no clear lane through tier '{tier_name}' in the {mode} "
+              f"layout; it may run under a node or along another line. Put fewer nodes in that tier or connect "
+              f"neighbouring tiers", file=sys.stderr)
+    for ei, e in enumerate(edges):
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
             raise SystemExit(f'edge {e["from"]}->{e["to"]} goes backwards; order tiers so edges flow forward')
+        same, near = b[4] == a[4], abs(nord[e["from"]] - nord[e["to"]]) == 1
+        lwid = text_w(e["label"], FSE) + 10 if e.get("label") else 0
         if mode == "wide":
-            if b[4] == a[4]:
+            if same and near and not e.get("label"):
                 down = b[1] > a[1]
                 p0 = (a[0], a[1] + (a[3]/2 if down else -a[3]/2)); p3 = (b[0], b[1] - (b[3]/2 if down else -b[3]/2))
-                p1 = (p0[0], (p0[1]+p3[1])/2); p2 = (p3[0], (p0[1]+p3[1])/2)
-            else:
-                p0 = (a[0] + a[2]/2, a[1]); p3 = (b[0] - b[2]/2, b[1]); dx = (p3[0]-p0[0]) * .5
-                p1 = (p0[0]+dx, p0[1]); p2 = (p3[0]-dx, p3[1])
+                segs = [vseg(p0, p3)]
+            elif same:   # swing out beside the column; nested when several share a side
+                side = 1 if (a[4] < T - 1 or T == 1) else -1
+                k = brank[ei]
+                edge_x = band_x[a[4]][1] if side > 0 else band_x[a[4]][0]
+                g = edge_x + side * boff[ei]
+                # off the side centre (where tier-to-tier lines leave), and apart for each nested bulge
+                dy = min(a[3] / 2 - 4, a[3] * (.22 + .1 * k)) * (1 if b[1] > a[1] else -1)
+                segs = [bulge((a[0] + side * a[2] / 2, a[1] + dy), (b[0] + side * b[2] / 2, b[1] - dy), 0, g)]
+            else:        # cross intermediate columns through free space between their nodes and other such lines
+                start, end = (a[0] + a[2] / 2, a[1]), (b[0] - b[2] / 2, b[1])
+                pts = [start]
+                for ti in range(a[4] + 1, b[4]):
+                    x0b, x1b = band_x[ti]
+                    target = a[1] + (b[1] - a[1]) * (((x0b + x1b) / 2 - start[0]) / (end[0] - start[0]))
+                    blocks = [(cy - h / 2 - M, cy + h / 2 + M) for (cx, cy, w, h, t2) in pos.values() if t2 == ti]
+                    blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
+                    yy = free_spot(ty + 8, H - 8, blocks, target)
+                    if yy is None:
+                        no_lane(e, tiers[ti]["name"])
+                        yy = free_spot(ty + 8, H - 8, blocks[:len(blocks) - len(lanes.get(ti, []))], target)
+                        yy = target if yy is None else yy
+                    lanes.setdefault(ti, []).append(yy)
+                    pts += [(x0b, yy), (x1b, yy)]
+                pts.append(end)
+                segs = through(pts, hseg)
         else:
-            if b[4] == a[4]:
+            if same and near and not e.get("label"):
                 right = b[0] > a[0]
                 p0 = (a[0] + (a[2]/2 if right else -a[2]/2), a[1]); p3 = (b[0] - (b[2]/2 if right else -b[2]/2), b[1])
-                p1 = ((p0[0]+p3[0])/2, p0[1]); p2 = ((p0[0]+p3[0])/2, p3[1])
-            else:
-                p0 = (a[0], a[1] + a[3]/2); p3 = (b[0], b[1] - b[3]/2); dy = (p3[1]-p0[1]) * .5
-                p1 = (p0[0], p0[1]+dy); p2 = (p3[0], p3[1]-dy)
-        curves.append((p0, p1, p2, p3))
-        d = f"M{p0[0]:.1f} {p0[1]:.1f} C{p1[0]:.1f} {p1[1]:.1f},{p2[0]:.1f} {p2[1]:.1f},{p3[0]:.1f} {p3[1]:.1f}"
+                segs = [hseg(p0, p3)]
+            elif same:   # swing below the row into the gap, nested by span; the last row gets extra room
+                # Always the gap below the row: the row below never uses it for its own bulges, so they cannot meet.
+                level = brank[ei]
+                depth = 8 + 7 * level
+                if (depth > rowgap - 8) if a[4] < T - 1 else level >= 2:
+                    print(f"WARN: architecture tier '{tiers[a[4]]['name']}' has too many same-tier edges for the phone "
+                          f"layout; they bunch up and are hard to tell apart. Connect fewer nodes inside the tier",
+                          file=sys.stderr)
+                side = 1
+                g = band_top[a[4]] + bh + depth
+                if a[4] == T - 1:
+                    extra_h = max(extra_h, depth + 12)
+                # off the bottom centre (where row-to-row lines leave), and apart for each nested bulge
+                dx = min(a[2] / 2 - 4, a[2] * (.22 + .1 * level)) * (1 if b[0] > a[0] else -1)
+                segs = [bulge((a[0] + dx, a[1] + side * a[3] / 2), (b[0] - dx, b[1] + side * b[3] / 2), 1, g)]
+            else:        # rows in between: go down through free space between their nodes and other such lines
+                start, end = (a[0], a[1] + a[3] / 2), (b[0], b[1] - b[3] / 2)
+                pts = [start]
+                for ti in range(a[4] + 1, b[4]):
+                    y0b = band_top[ti]
+                    target = a[0] + (b[0] - a[0]) * (((y0b + bh / 2) - start[1]) / (end[1] - start[1]))
+                    blocks = [(cx - w / 2 - M, cx + w / 2 + M) for (cx, cy, w, h, t2) in pos.values() if t2 == ti]
+                    blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
+                    xx = free_spot(6, W - 6, blocks, target)
+                    if xx is None:
+                        no_lane(e, tiers[ti]["name"])
+                        xx = free_spot(6, W - 6, blocks[:len(blocks) - len(lanes.get(ti, []))], target)
+                        xx = target if xx is None else xx
+                    lanes.setdefault(ti, []).append(xx)
+                    pts += [(xx, y0b), (xx, y0b + bh)]
+                pts.append(end)
+                segs = through(pts, vseg)
+        curves.extend(segs)
+        routes.append((e, a, b, segs))
+    # labels after every route is known, so a label can keep clear of nodes, other labels and other lines
+    pts_of = [[_bez(*sg, k / 60) for sg in segs for k in range(61)] for _, _, _, segs in routes]
+    for ri, (e, a, b, segs) in enumerate(routes):
+        d = f"M{segs[0][0][0]:.1f} {segs[0][0][1]:.1f}" + "".join(
+            f" C{p1[0]:.1f} {p1[1]:.1f},{p2[0]:.1f} {p2[1]:.1f},{p3[0]:.1f} {p3[1]:.1f}" for _, p1, p2, p3 in segs)
         lab = ""
         if e.get("label"):
-            mx, my = _bez(p0, p1, p2, p3)
+            lw, lh = text_w(e["label"], FSE) + 10, FSE + 8
+            others = [q for rj, ps in enumerate(pts_of) if rj != ri for q in ps]
+
+            def fits(pt, strict):
+                x0, y0, x1, y1 = pt[0] - lw / 2, pt[1] - lh / 2, pt[0] + lw / 2, pt[1] + lh / 2
+                if x0 < 2 or x1 > W - 2 or y0 < 2 or y1 > H + extra_h - 2:
+                    return False
+                if any(x0 < bx1 - 2 and x1 > bx0 + 2 and y0 < by1 - 2 and y1 > by0 + 2 for bx0, by0, bx1, by1 in boxes):
+                    return False
+                if any(x0 < l1 and x1 > l0 and y0 < m1 and y1 > m0 for l0, l1, m0, m1 in lrects):
+                    return False
+                return not strict or not any(x0 - 2 < qx < x1 + 2 and y0 - 2 < qy < y1 + 2 for qx, qy in others)
+            cands = []
             if mode != "wide" and b[4] == a[4] + 1:
-                # Phone rows: the plain midpoint lands on the next band's top edge, where the tier name sits.
-                # Put the label in the middle of the gap between the two bands instead (y is monotonic in t).
+                # phone rows: prefer the middle of the gap between the two bands (the band top holds the tier name)
                 target, lo_t, hi_t = band_top[b[4]] - rowgap / 2, 0.0, 1.0
                 for _ in range(30):
                     mid = (lo_t + hi_t) / 2
-                    lo_t, hi_t = (mid, hi_t) if _bez(p0, p1, p2, p3, mid)[1] < target else (lo_t, mid)
-                mx, my = _bez(p0, p1, p2, p3, lo_t)
-            lw = text_w(e["label"], FSE) + 10
-            lrects.append((mx - lw / 2, mx + lw / 2, my - FSE / 2 - 4, my + FSE / 2 + 4))
-            for nid2, (ncx, ncy, nw2, nh2, _) in pos.items():
-                if (mx - lw / 2 < ncx + nw2 / 2 - 3 and mx + lw / 2 > ncx - nw2 / 2 + 3
-                        and my - FSE / 2 - 4 < ncy + nh2 / 2 - 3 and my + FSE / 2 + 4 > ncy - nh2 / 2 + 3):
-                    print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) sits on node '{nid2}' "
-                          f"in the {mode} layout and will be hidden; shorten it, drop it, or connect neighbouring nodes",
-                          file=sys.stderr)
-                    break
-            lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
+                    lo_t, hi_t = (mid, hi_t) if _bez(*segs[0], mid)[1] < target else (lo_t, mid)
+                cands.append((-1, _bez(*segs[0], lo_t)))
+            cands += [(abs((si + k / 40) / len(segs) - .5), _bez(*sg, k / 40)) for si, sg in enumerate(segs) for k in range(41)]
+            # also beside the line (touching it), for tight spots where a centred label would cover another line
+            sx, sy = lw / 2 + 3, lh / 2 + 2
+            cands += [(c + .6, (pt[0] + dx, pt[1] + dy)) for c, pt in list(cands)
+                      for dx, dy in ((-sx, 0), (sx, 0), (0, -sy), (0, sy))]
+            cands.sort(key=lambda c: c[0])
+            spot = next((pt for _, pt in cands if fits(pt, True)), None) or next((pt for _, pt in cands if fits(pt, False)), None)
+            if spot is None:
+                spot = cands[0][1]
+                print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) has no free spot along its line "
+                      f"in the {mode} layout and will overlap a node or another label; shorten or drop it", file=sys.stderr)
+            mx, my = spot
+            lrects.append((mx - lw / 2, mx + lw / 2, my - lh / 2, my + lh / 2))
+            lpos[ri] = lrects[-1]
+            lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-lh/2:.1f}" width="{lw:.1f}" height="{lh:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
+    H += extra_h
+    if mode == "wide":
+        far = max((x for sg in curves for k in range(13) for x in [_bez(*sg, k / 12)[0]]), default=0)
+        if far > W - 4:
+            W = far + 8
+            if FSS * 529 / W < 12:   # the fonts were sized for the narrower W
+                print("WARN: architecture same-tier edges widen the side-by-side layout so text may drop below 12px at "
+                      "529px; shorten their labels or connect fewer nodes inside a tier", file=sys.stderr)
+    self_check(routes, pts_of)
     if mode != "wide":
-        # Tier names sit on the top edge of their band, at the leftmost x (inside 12..W-12) that no edge crosses.
-        # Long Japanese names reach the first node's column, where edges usually enter.
+        # Tier names sit on the top edge of their band, preferably where no edge passes (they are drawn over the
+        # edges with a halo, so a crossing stays readable) and never on an edge label.
         for name, by in names:
             nw = tier_w(name, FSS)
             if nw > W - 24:
                 print(f"WARN: architecture tier name '{name}' is too long for the phone layout "
                       f"(~{nw:.1f} of {W - 24} units); shorten it", file=sys.stderr)
-                out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+                tnames.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
                 continue
-            xs = [x for p0, p1, p2, p3 in curves for t in [i / 80 for i in range(81)]
-                  for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
+            xs = [x for sg in curves for t in [i / 80 for i in range(81)] for x, yy in [_bez(*sg, t)] if by <= yy <= by + 22]
             spans = [(x0l, x1l) for x0l, x1l, y0l, y1l in lrects if y0l < by + 22 and y1l > by]
             cands = [12 + 4 * k for k in range(int((W - 24 - nw) // 4) + 1)] + [W - 12 - nw]
-            free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)
-                    and not any(a < x0 + nw + 4 and b > x0 - 4 for a, b in spans)]
-            if not free:
-                print(f"WARN: architecture tier '{name}': edges or edge labels may cross its name on the phone layout "
-                      f"(estimated width); if check.mjs reports this tier, shorten the name or route fewer edges into it",
-                      file=sys.stderr)
-            x0 = free[0] if free else 12
+            clear = [x0 for x0 in cands if not any(a < x0 + nw + 4 and b > x0 - 4 for a, b in spans)]
+            free = [x0 for x0 in clear if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)]
+            if not clear:
+                print(f"WARN: architecture tier '{name}': edge labels may cover its name on the phone layout "
+                      f"(estimated width); if check.mjs reports this tier, shorten the name or the labels", file=sys.stderr)
+            x0 = (free or clear or [12])[0]
             if x0 == cands[-1] and x0 > 12:   # right corner: anchor at the end so a wider-than-estimated name grows left
-                out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
+                tnames.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
             else:
-                out.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+                tnames.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():
@@ -393,7 +670,7 @@ def _arch_svg(spec, u, mode, focal):
     aria = E(spec.get("alt", spec["title"]))
     fsv = f"--fs:{FS}px;--fss:{FSS}px;--fse:{FSE}px"
     return (f'<svg class="ar-svg ar-{mode}" viewBox="0 0 {W:.0f} {H:.0f}" style="{fsv}" role="img" aria-label="{aria}">'
-            f'{defs}{"".join(out)}{"".join(eds)}{"".join(nodes)}</svg>'), list(pos)
+            f'{defs}{"".join(out)}{"".join(eds)}{"".join(tnames)}{"".join(nodes)}</svg>'), list(pos)
 
 
 def render_architecture(spec, u, lv):

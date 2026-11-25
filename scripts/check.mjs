@@ -100,24 +100,31 @@ const PROBE = () => {
       if (tb.left < rb.left - 1 || tb.right > rb.right + 1) { clipped.push(`${r.id} «${tx.textContent.slice(0, 24)}» wider than its node`); break; }
     }
   }
-  // Architecture tier names: inside their band, and no edge running through the text (user units of the SVG)
+  // Architecture tier names: inside their band, and not under an edge label (user units of the SVG)
   for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
     if (!svg.getClientRects().length) continue;
     const bands = [...svg.querySelectorAll("rect.ar-band")].map((b) => b.getBBox());
-    const paths = [...svg.querySelectorAll("path.ar-base")];
     for (const t of svg.querySelectorAll("text.ar-tier")) {
       const tb = t.getBBox();
       const band = bands.find((b) => tb.y >= b.y - 2 && tb.y + tb.height <= b.y + b.height + 2 && tb.x < b.x + b.width && tb.x + tb.width > b.x);
       const name = `${r.id} tier «${t.textContent.slice(0, 24)}»`;
       if (!band || tb.x < band.x - 1 || tb.x + tb.width > band.x + band.width + 1) { clipped.push(`${name} outside its band`); continue; }
-      const crossed = paths.some((pth) => { const L = pth.getTotalLength();
-        for (let i = 0; i <= 200; i++) { const q = pth.getPointAtLength(L * i / 200);
-          if (q.x > tb.x + 1 && q.x < tb.x + tb.width - 1 && q.y > tb.y + 2 && q.y < tb.y + tb.height - 2) return true; }
-        return false; });
-      if (crossed) clipped.push(`${name} crossed by an edge`);
+      // an edge passing under the name is fine: names are drawn over edges with a halo
       const onLabel = [...svg.querySelectorAll("rect.ar-elabel-bg")].some((lr) => { const l = lr.getBBox();
         return l.x < tb.x + tb.width && l.x + l.width > tb.x && l.y < tb.y + tb.height && l.y + l.height > tb.y; });
       if (onLabel) clipped.push(`${name} under an edge label`);
+    }
+  }
+  // An edge must not run under a node it does not connect (it would read as passing through that node)
+  for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
+    if (!svg.getClientRects().length) continue;
+    const rects = new Map([...svg.querySelectorAll(".ar-node")].map((g) => [[...g.classList].find((c) => /^n-\d+$/.test(c)), g.querySelector("rect").getBBox()]));
+    for (const g of svg.querySelectorAll(".ar-ed")) {
+      const ends = [...g.classList].filter((c) => /^x-\d+$/.test(c)).map((c) => "n-" + c.slice(2));
+      const pth = g.querySelector("path.ar-base"), L = pth.getTotalLength();
+      const hit = [...rects].find(([id, b]) => !ends.includes(id) && Array.from({ length: 151 }, (_, i) => pth.getPointAtLength(L * i / 150))
+        .some((q) => q.x > b.x + 3 && q.x < b.x + b.width - 3 && q.y > b.y + 3 && q.y < b.y + b.height - 3));
+      if (hit) clipped.push(`${r.id} edge ${ends.join("→")} runs under node ${hit[0]}`);
     }
   }
   // Edge labels must not sit under a node box (nodes are drawn after edges and would hide them)
