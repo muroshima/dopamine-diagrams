@@ -9,7 +9,7 @@
 // zenn:       fences intact; each html-embed block at widths 700/591/561/559/340, light+dark, after every click:
 //             height <= 500px, no horizontal overflow (page or inside the diagram), text >= 12px, buttons/tags on one line,
 //             no animation loop faster than 0.5s (Zenn bans flashing; WCAG 2.3.1)
-// standalone: widths 1200/768/375, light+dark: overflow, text size, loop speed
+// standalone: widths 1200/768/375/340, light+dark: overflow, text size, loop speed
 // slides:     1280x720 per <section class="slide">: content fits the slide, text size, loop speed
 import fs from "node:fs";
 import path from "node:path";
@@ -211,7 +211,7 @@ if (!chromium) {
         await page.close();
       }); });
     } else {
-      const widths = target === "slides" ? [1280] : [1200, 768, 375];
+      const widths = target === "slides" ? [1280] : [1200, 768, 375, 340];
       for (const w of widths) for (const t of themes) jobs.push(async () => {
         const page = await browser.newPage({ viewport: { width: w, height: target === "slides" ? 720 : 900 } });
         await page.goto(pathToFileURL(path.resolve(file)).href);

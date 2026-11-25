@@ -1016,6 +1016,9 @@ def render_ladder(spec, u, lv):
             print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
     n = len(lvls)
     tier_count_check(spec, lvls, "ladder")
+    stepup = spec.get("stepup", False)
+    if not isinstance(stepup, bool):
+        fail(f"ladder: stepup must be true or false; got {stepup!r:.40}")
     now_l = spec.get("now_label", T(spec, "now_label"))
     next_l = spec.get("next_label", T(spec, "next_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
@@ -1042,6 +1045,15 @@ def render_ladder(spec, u, lv):
                    f"#{u}-l{i}:focus-visible~.ld-st label[for={u}-l{i}]{{outline:2px solid var(--b);outline-offset:2px}}"
                    f"{sel}~.ld-pn .ld-p0{{display:none}}{sel}~.ld-pn .ld-q{i}{{display:block;animation:pop .35s ease}}"
                    f"{sel}~.ld-pn .ld-q{i} .gold{{animation:var(--enter) .55s ease-out .2s both{pulse}}}")
+        if stepup and i:
+            # step-up: the levels below light up one by one from the bottom (bar colour and the ✓ together).
+            # 0.6s apart, but the whole run stays within 2s, which wins for 5+ levels below
+            gap = min(.6, 2 / i)
+            for k in range(i):
+                css.append(f"{sel}~.ld-st label[for={u}-l{k}]{{border-color:var(--g);animation:dd-passbar .4s ease-out {k * gap:.2f}s both}}"
+                           f"{sel}~.ld-st label[for={u}-l{k}]>.in{{background:var(--gs);animation:dd-passin .4s ease-out {k * gap:.2f}s both}}"
+                           f"{sel}~.ld-st label[for={u}-l{k}] .ld-n::after{{content:\" ✓\";color:var(--g);"
+                           f"animation:var(--enter) .4s ease-out {k * gap:.2f}s both}}")
     return body, "".join(css)
 
 
@@ -1182,7 +1194,8 @@ def main():
                    "[data-theme=dark] body{background:#0d1117}"
                    "@media (prefers-color-scheme:dark){:root:not([data-theme=light]) body{background:#0d1117}}")
         if a.target == "standalone":
-            shell = ("body{padding:24px 16px}.dd-wrap{max-width:760px;margin:0 auto 28px}")
+            shell = ("body{padding:24px 16px}.dd-wrap{max-width:760px;margin:0 auto 28px}"
+                     "@media (max-width:400px){body{padding:16px 8px}}")   # phones: give the diagram the width Zenn gives it
             items = "".join(f'<div class="dd-wrap">{h}</div>' for _, h, _ in built)
         else:
             shell = ("@page{size:1280px 720px;margin:0}"

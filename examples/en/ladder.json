@@ -5,11 +5,32 @@
   "now_label": "Now",
   "next_label": "Next move",
   "levels": [
-    {"name": "Hero", "now": "One person knows how to fix things", "next": "Write down the top five fixes"},
-    {"name": "Runbooks", "now": "Runbooks exist but go stale", "next": "Link each alert to its runbook"},
-    {"name": "Rotation", "now": "A fair rotation with handovers", "next": "Review every page in a weekly retro"},
-    {"name": "Automated", "now": "Common fixes run automatically", "next": "Measure toil and cut the biggest one"},
-    {"name": "Self-healing", "now": "Most incidents resolve themselves", "next": "Keep the humans for the unknowns"}
+    {
+      "name": "Hero",
+      "now": "One person knows how to fix things",
+      "next": "Write down the top five fixes"
+    },
+    {
+      "name": "Runbooks",
+      "now": "Runbooks exist but go stale",
+      "next": "Link each alert to its runbook"
+    },
+    {
+      "name": "Rotation",
+      "now": "A fair rotation with handovers",
+      "next": "Review every page in a weekly retro"
+    },
+    {
+      "name": "Automated",
+      "now": "Common fixes run automatically",
+      "next": "Measure toil and cut the biggest one"
+    },
+    {
+      "name": "Self-healing",
+      "now": "Most incidents resolve themselves",
+      "next": "Keep the humans for the unknowns"
+    }
   ],
-  "note": "Example content for the ladder pattern"
+  "note": "Example content for the ladder pattern",
+  "stepup": true
 }

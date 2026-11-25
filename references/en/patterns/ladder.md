@@ -24,6 +24,7 @@ Use it for maturity models, levels, staged rollout plans.
 |---|---|
 | `levels[].name` | Shown on the bar on wide screens (hidden on phones; the panel repeats it) |
 | `levels[].short` | Bar label; default `Lv.N` |
+| `stepup` | `true`: when a level is picked, the levels below it light up one by one from the bottom with a ✓ (a pachinko step-up). Bar colour and ✓ change together. 0.6s apart, but staying within 2s in total wins, so 5+ levels below are closer together |
 | `levels[].importance`, `levels[].importance_label` | Importance 1-4 and its word. A badge appears in the selected level's heading (same as explorer; 4 once). For how much each level matters, not for the maturity itself |
 | `levels[].now`, `next` | One sentence each |
 | `top_focal` | `false` removes the rainbow border from the top bar |
