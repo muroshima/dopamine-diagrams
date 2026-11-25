@@ -26,3 +26,9 @@
   .dd .cp-items{grid-template-columns:1fr 1fr}
   .dd .cp-item{padding:5px 8px;font-size:12.5px}
 }
+/* stepup: no rainbow on the panel; the conclusion (.cp-end) carries it. Items grow by scale + width (set inline) */
+.dd .cp-after.cp-up{border-color:var(--g)}
+.dd .cp-up .cp-item{justify-self:center}
+.dd .cp-end{margin:10px auto 0}
+.dd .cp-end>.in{background:var(--gs);padding:6px 10px}
+@media (max-width:560px){.dd .cp-end{margin-top:8px}.dd .cp-end>.in{padding:4px 8px}}

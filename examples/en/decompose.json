@@ -6,6 +6,7 @@
   "back": "Back",
   "hint": "You can neither build nor test this sentence",
   "done": "Testable!",
+  "stepup": ["Hard to break in, easy to trace", "Five checks, each pass or fail"],
   "children": [
     {"tag": "Access", "text": "Admins must sign in with MFA"},
     {"tag": "Review", "text": "Roles are reviewed every month"},

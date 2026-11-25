@@ -225,6 +225,18 @@ def tier_count_check(spec, items, where):
               file=sys.stderr)
 
 
+def stepup_gap(n):
+    """Delay between steps that land one after another (step-up): 0.6s apart, but the n steps after the first must all
+    have started within 2s, which wins when both cannot hold."""
+    return min(.6, 2 / n) if n else .6
+
+
+def step_scale(s):
+    """Grow a step with the scale property, not transform (an entrance's last frame resets transform, and any tilt
+    with it). The width shrinks by the same factor, so the grown box fills exactly its slot and never runs out of it."""
+    return f"scale:{s:.2f};width:calc(100% / {s:.2f})"
+
+
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
     need(spec, "title")
@@ -308,12 +320,46 @@ def render_decompose(spec, u, lv):
                  if k.get("tag") else f'<div class="dc-k" style="--i:{i}">{E(k["text"])}</div>'
                  for i, k in enumerate(kids))
     ttl = f'<div class="ttl">{E(spec["title"])}</div>' if spec.get("title") else ""
+    steps = spec.get("stepup")   # vague -> a bit concrete -> testable, before the pieces appear
+    if steps is not None and (not isinstance(steps, list) or not 1 <= len(steps) <= 3
+                              or any(not isinstance(t, str) or not t.strip() for t in steps)):
+        fail(f"decompose: stepup must be a list of 1 to 3 non-empty strings, each a more concrete version of root.text; "
+             f"got {steps!r:.60}")
+    steps = steps or []
+    m = len(steps)
+    if m:   # estimate the broken-down state on a 340px phone (316px inside the padding), measured from the CSS
+        def lines(w, room):
+            return max(1, math.ceil(w / room))
+        h = 12 + (35.6 if ttl else 0) + 26 + (19.2 if root.get("kicker") else 0)
+        h += 24 * lines(text_w(root["text"], 15), 296) + 55          # root text (15px bold), then the button row
+        for k, t in enumerate(steps):
+            sc, rb = 1 + .04 * (k + 1), k == m - 1
+            # the step's text room: its narrowed width, minus border (2px) or rainbow band (6px), padding, and "▼ "
+            room = 316 / sc - (12 if rb else 4) - 20 - 13
+            tw = sum(15 if ord(c) > 0x2E7F else 7.8 for c in t)   # 15px bold: CJK 15px, Latin ~7.8px (measured)
+            if tw > room:
+                print(f"WARN: decompose: stepup step {k + 1} '{t[:30]}' wraps on phones (about {int(room // 15)} CJK or "
+                      f"{int(room // 7.8)} Latin characters fit); shorten it", file=sys.stderr)
+            h += 30.25 + 20.25 * (lines(tw, room) - 1) + (8 if rb else 0) + 4
+        h += 4
+        for kd_ in kids:   # 12.5px text beside a 12px tag, 296px wide; 32px for one line, +20px for each more
+            tagw = text_w(kd_["tag"], 12) + 14 if kd_.get("tag") else 0
+            kw = sum(12.5 if ord(c) > 0x2E7F else 6.5 for c in str(kd_["text"]))   # Latin ~0.52em (measured)
+            h += 32 + 20 * (lines(tagw + kw, 296) - 1)
+        h += 4 * (n - 1) + (10 + 19.2 * lines(text_w(spec["note"], 12), 316) if spec.get("note") else 0) + 12
+        if h > 494:
+            print(f"WARN: decompose: with stepup the broken-down state is about {h:.0f}px tall on phones (limit 500px); "
+                  f"drop a step or a child, or shorten them", file=sys.stderr)
+    st = "".join(f'<div class="dc-st dc-s{k}{" rb" if k == m - 1 else ""}" style="{step_scale(1 + .04 * (k + 1))}">'
+                  f'<div class="in"><span class="dc-ar" aria-hidden="true">▼ </span>{E(t)}</div></div>'
+                  for k, t in enumerate(steps))
+    st = f'<div class="dc-steps">{st}</div>' if st else ""
     body = (f'<input class="h" type="checkbox" id="{u}-s">{ttl}'
             f'<div class="dc-root"><span class="dc-kick">{E(root.get("kicker", ""))}</span>{E(root["text"])}'
             f'<span class="dc-done gold">{E(spec.get("done", T(spec, "done")))}</span></div>'
             f'<div class="dc-mid"><label for="{u}-s" class="btn shine"><span class="dc-t1">{E(spec.get("button", T(spec, "decompose_button")))}</span>'
             f'<span class="dc-t2">{E(spec.get("back", T(spec, "back")))}</span></label>'
-            f'<div class="dc-hint">{E(spec.get("hint", ""))}</div></div>'
+            f'<div class="dc-hint">{E(spec.get("hint", ""))}</div></div>{st}'
             f'<div class="dc-kids" style="grid-template-columns:repeat({cols},1fr)">{kd}</div>')
     s = f"#{u}-s:checked"
     pulse = "" if lv == 1 else ",dd-goldpulse 1.8s ease-in-out 1.2s infinite"
@@ -327,6 +373,15 @@ def render_decompose(spec, u, lv):
            # PDF has no clicks: print the broken-down state
            f"@media print{{#{u} .dc-k{{opacity:1;filter:none;transform:none;border-color:var(--g)}}"
            f"#{u} .dc-kids{{margin-top:14px}}#{u} .dc-hint,#{u} .dc-mid{{display:none}}#{u} .dc-done{{display:block}}#{u} .dc-root{{border-style:solid;border-color:var(--g)}}}}")
+    if m:   # step-up: each step lands 0.6s after the last (all within 2s), a little bigger; only the last one stamps
+        gap = stepup_gap(m)
+        stag = max(0, min(.09, (2 - m * gap) / max(n - 1, 1)))
+        css += (f"{s}~.dc-steps{{display:block}}@media print{{#{u} .dc-steps{{display:block;margin-top:14px}}}}"
+                + "".join(f"{s}~.dc-steps .dc-s{k}{{animation:{'var(--enter) .5s' if k == m - 1 else 'pop .4s'} "
+                          f"ease-out {k * gap:.2f}s both}}" for k in range(m))
+                # the pieces go on from their faint preview (.25) to full, never dropping to 0 first
+                + f"{s}~.dc-kids .dc-k{{animation-name:dc-kin;animation-delay:calc({m * gap:.2f}s + var(--i) * {stag:.2f}s)}}"
+                f"{s}~.dc-root .dc-done{{animation:pop .4s ease-out {(m - 1) * gap:.2f}s both{pulse}}}")
     return body, css
 
 
@@ -918,23 +973,39 @@ def render_compare(spec, u, lv):
                 f'<span class="gg-goal{" gg-l" if g / top < .3 else " gg-r" if g / top > .7 else ""}" style="left:{g / top * 100:.2f}%"><span>{E(T(spec, "goal"))} {g}{unit}</span></span></div>'
                 f'<b class="gg-st">{E(st)}</b></div>')
 
+    # step-up (rhythm game result screen): the after items land one by one, then the conclusion stamps last
+    up = spec.get("stepup", False)
+    if not isinstance(up, bool):
+        fail(f"compare: stepup must be true or false; got {up!r:.40}")
+    n_up = len(spec["after"].get("items", []))
+    if up and (not n_up or not (spec["after"].get("headline") or spec["after"].get("message"))):
+        fail("compare: stepup needs after.items (the grounds) and after.headline or after.message (the conclusion)")
+    if up and n_up > 5:
+        print(f"WARN: compare: stepup with {n_up} after items puts them only {stepup_gap(n_up):.2f}s apart (0.6s is the aim); "
+              f"keep the grounds to 3 to 5", file=sys.stderr)
+
     def panel(side, key, default_tone):
         d = spec[key]
         new_count_check(d.get("items", []), f"compare {key}")
+        grow = up and key == "after"   # each item a little bigger than the last; the conclusion biggest, in the .rb
         items = "".join(
-            f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}">'
+            f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}"'
+            + (f' style="--k:{k};{step_scale(1 + .02 * k)}"' if grow else "") + '>'
             f'{E(it["text"] if isinstance(it, dict) else it)}{new_badge(it, f"compare {key} item {k+1}")}</div>'
             for k, it in enumerate(d.get("items", [])))
         head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
+        if grow:
+            msg = (f'<div class="cp-msg cp-end rb" style="{step_scale(1 + .02 * n_up)}">'
+                   f'<div class="in">{gold}{E(d.get("message", ""))}</div></div>')
         return head + cutin(d, f"compare {key}") + metric(key) + f'<div class="cp-items">{items}</div>' + msg
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
             f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
             f'<span class="cp-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
             f'<div class="cp-stage"><div class="cp-panel cp-before">{panel("Before", "before", "bad")}</div>'
-            f'<div class="cp-panel cp-after rb"><div class="in">{panel("After", "after", "good")}</div></div></div>')
+            f'<div class="cp-panel cp-after {"cp-up" if up else "rb"}"><div class="in">{panel("After", "after", "good")}</div></div></div>')
     s = f"#{u}-s:checked"
     css = (f"#{u}-s:focus-visible~.cp-top .btn{{outline:2px solid var(--b);outline-offset:2px}}"
            f"{s}~.cp-top .cp-t1,{s}~.cp-stage .cp-before{{display:none}}{s}~.cp-top .cp-t2{{display:inline}}"
@@ -945,6 +1016,15 @@ def render_compare(spec, u, lv):
            f"{s}~.cp-stage .cp-after .gg-fill{{animation:dd-fill 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
            f"{s}~.cp-stage .cp-after .gg-ok .gg-st{{animation:var(--enter) .55s ease-out 1.6s both}}"
            f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")
+    if up:   # grounds 0.6s apart (all within 2s), then the conclusion; only the conclusion stamps
+        gap = stepup_gap(n_up)
+        a = f"{s}~.cp-stage .cp-after"
+        css += (f"{a}{{animation-name:pop}}{a} .gg-ok .gg-st{{animation-name:pop}}"
+                f"{a} .cp-item{{animation:pop .4s ease-out both;animation-delay:calc(var(--k) * {gap:.2f}s)}}"
+                f"{a} .cp-item .nb{{animation-delay:calc(var(--k) * {gap:.2f}s + .2s)}}"   # NEW pops with its item
+                f"{a} .cp-end{{animation:var(--enter) .5s ease-out {n_up * gap:.2f}s both}}"
+                # a cut-in is a verdict too: it slides in with the conclusion, not before the grounds
+                f"{a} .ci{{animation-delay:{n_up * gap:.2f}s}}")
     if hush_on(spec, "compare"):   # when "after" shows, the title and the button stop and dim
         css += (f"{s}~.cp-top .ttl,{s}~.cp-top .btn{{{STILL}}}{s}~.cp-top .btn::after{{{FADE}}}"
                 + hush_base(f"#{u} .cp-top .btn::after"))

@@ -63,8 +63,8 @@ where JavaScript is banned (Zenn `html-embed`) and in slides.
 |---|---|---|
 | Components and how a request flows between them | `architecture` | Flow animates along edges; hover a box to light its connections |
 | "In situation X, do Y (not Z)" for several situations | `explorer` | Pick a situation; the answer stamps in inside a rainbow border |
-| A vague statement that must become concrete items | `decompose` | Click to split it; pieces stamp in one by one; a gold "done" stamp lands |
-| The habit vs. the better way | `compare` | Click to flip "before" into "after" inside a rainbow border |
+| A vague statement that must become concrete items | `decompose` | Click to split it; pieces stamp in one by one; a gold "done" stamp lands. With `stepup`, it first climbs vague → a bit concrete → testable, a little bigger each step |
+| The habit vs. the better way | `compare` | Click to flip "before" into "after" inside a rainbow border. With `stepup`, the grounds line up one by one before the conclusion lands |
 | A cycle that repeats (and when to restart from the goal) | `loop` | Light runs round the ring; steps light up in turn |
 | Linear steps | `flow` | Light runs along the line; pick a step to read it; the focal step sits in a rainbow border |
 | Levels / maturity / staged plans | `ladder` | Pick your level; "now" and a gold "next move" appear |
