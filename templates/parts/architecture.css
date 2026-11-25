@@ -3,7 +3,8 @@
 .dd .ar-svg{display:block;width:100%;margin:0 auto;overflow:visible}
 .dd .ar-narrow{display:none;max-width:320px}
 .dd .ar-svg text{font-family:inherit;fill:var(--ink);text-anchor:middle}
-.dd .ar-tier{font-weight:800;fill:var(--mut)!important;letter-spacing:.04em}
+.dd .ar-tier{font-weight:800;fill:var(--mut)!important;letter-spacing:.04em;
+  paint-order:stroke;stroke:var(--card);stroke-width:5px;stroke-linejoin:round}   /* drawn over edges: the halo keeps it readable */
 .dd .ar-band{fill:var(--card);opacity:.55;stroke:var(--line);stroke-dasharray:4 4}
 .dd .ar-node rect{fill:var(--card);stroke:var(--b);stroke-width:2}
 .dd .ar-node .lb{font-weight:800}

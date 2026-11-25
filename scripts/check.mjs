@@ -110,11 +110,7 @@ const PROBE = () => {
       const band = bands.find((b) => tb.y >= b.y - 2 && tb.y + tb.height <= b.y + b.height + 2 && tb.x < b.x + b.width && tb.x + tb.width > b.x);
       const name = `${r.id} tier «${t.textContent.slice(0, 24)}»`;
       if (!band || tb.x < band.x - 1 || tb.x + tb.width > band.x + band.width + 1) { clipped.push(`${name} outside its band`); continue; }
-      const crossed = paths.some((pth) => { const L = pth.getTotalLength();
-        for (let i = 0; i <= 200; i++) { const q = pth.getPointAtLength(L * i / 200);
-          if (q.x > tb.x + 1 && q.x < tb.x + tb.width - 1 && q.y > tb.y + 2 && q.y < tb.y + tb.height - 2) return true; }
-        return false; });
-      if (crossed) clipped.push(`${name} crossed by an edge`);
+      // an edge passing under the name is fine: names are drawn over edges with a halo
       const onLabel = [...svg.querySelectorAll("rect.ar-elabel-bg")].some((lr) => { const l = lr.getBBox();
         return l.x < tb.x + tb.width && l.x + l.width > tb.x && l.y < tb.y + tb.height && l.y + l.height > tb.y; });
       if (onLabel) clipped.push(`${name} under an edge label`);

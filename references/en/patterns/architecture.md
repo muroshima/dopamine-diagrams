@@ -29,7 +29,7 @@ The 560px media query shows one of them.
 | `tiers[].name` | yes | Short; shown at the top of each column / row |
 | `tiers[].nodes[].id` | yes | Unique; used for edges and hover selectors |
 | `nodes[].label`, `nodes[].sub` | label yes | `sub` is a second, smaller line |
-| `edges[]` | no | `from` must be in the same or an earlier tier (edges flow forward) |
+| `edges[]` | no | `from` must be in the same or an earlier tier (edges flow forward). Edges that skip tiers pass through the gaps between nodes in between; same-tier edges between non-neighbours (or with a label) swing out beside the column |
 | `edges[].label` | no | Short (≤ 10 characters). Gaps between tiers widen to fit labels |
 | `focal` | no | One id or a list of at most 2 (build.py stops at 3) |
 | `alt` | recommended | Becomes the SVG `aria-label` |
