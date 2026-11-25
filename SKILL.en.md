@@ -88,6 +88,7 @@ The effects only work when most of the diagram is calm.
 - Never put two rainbow borders side by side. Never make every node focal.
 - To show importance in steps, use `importance` (1-4). As with a pachinko hold colour or a gacha rarity, the rainbow (4) is the top, used once.
 - In `flow`, `"judge": true` slides the picked step's card into a judge line that glows once and stays lit (a rhythm game). It moves once per pick and adds no height. `"foresee": true` puts a still "★ Key" mark on the focal step before it is opened; opening it swaps the mark for the detail (a pachinko foresee).
+- To make a focus without adding effects, use `hush: true` (flow, compare, loop). When the answer appears, everything else stops, decoration without text fades, and the background round the focus darkens a little over 1.2s (a pachinko freeze). Text never fades or darkens (one exception: loop's red legend turns a darker red, `--rt`, to stay readable on the darker background).
 
 ## Hard rules
 

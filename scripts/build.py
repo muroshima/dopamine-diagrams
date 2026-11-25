@@ -17,7 +17,7 @@ ZENN_MAX_BYTES = 50 * 1024
 
 DARK_VARS = ("--bg:#161b22;--ink:#e6edf3;--mut:#9da7b3;--line:#30363d;--card:#0d1117;--a:#fb923c;--as:#431407;"
              "--at:#fb923c;--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;--yt:#fde68a;--bt:#93c5fd;"
-             "--v:#a78bfa;--glow:#ffd54f")
+             "--v:#a78bfa;--glow:#ffd54f;--rt:#f87171;--hdim:rgba(0,0,0,.55);--hfade:.2")
 CHIP_ON = ("background:linear-gradient(180deg,#cc4a10,#a3360b);border-color:transparent;color:#fff;"
            "animation:dd-neon var(--pulse) ease-in-out infinite")
 CHIP_ON_LV1 = "background:#9a3412;border-color:transparent;color:#fff"   # white on --a is only 3.4:1
@@ -173,9 +173,15 @@ def hush_on(spec, where):
     return h
 
 
-# Hush stops motion; only decoration without text fades (text keeps its contrast, also in print).
+# Hush stops motion; only decoration without text fades (text keeps its contrast, also in print). Dark mode fades more.
 STILL = "animation-play-state:paused!important"
-FADE = "animation-play-state:paused!important;opacity:.35"
+FADE = "animation-play-state:paused!important;opacity:var(--hfade)"
+HUSH_DIM = '<i class="dd-dim" aria-hidden="true"></i>'   # put it after the inputs, so "#x:checked~.dd-dim" reaches it
+
+
+def hush_dim(u, at, on=None):
+    """Darken the background round the focus at `at` (a radial-gradient position) while selector `on` matches."""
+    return f"#{u}{{isolation:isolate}}#{u} .dd-dim{{--dim-at:{at}}}" + (f"{on}~.dd-dim{{opacity:1}}" if on else "")
 
 
 def hush_base(sel):
@@ -1000,7 +1006,8 @@ def render_compare(spec, u, lv):
             msg = (f'<div class="cp-msg cp-end rb" style="{step_scale(1 + .02 * n_up)}">'
                    f'<div class="in">{gold}{E(d.get("message", ""))}</div></div>')
         return head + cutin(d, f"compare {key}") + metric(key) + f'<div class="cp-items">{items}</div>' + msg
-    body = (f'<input class="h" type="checkbox" id="{u}-s">'
+    hush = hush_on(spec, "compare")
+    body = (f'<input class="h" type="checkbox" id="{u}-s">{HUSH_DIM if hush else ""}'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
             f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
             f'<span class="cp-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
@@ -1025,9 +1032,9 @@ def render_compare(spec, u, lv):
                 f"{a} .cp-end{{animation:var(--enter) .5s ease-out {n_up * gap:.2f}s both}}"
                 # a cut-in is a verdict too: it slides in with the conclusion, not before the grounds
                 f"{a} .ci{{animation-delay:{n_up * gap:.2f}s}}")
-    if hush_on(spec, "compare"):   # when "after" shows, the title and the button stop and dim
+    if hush:   # when "after" shows, the title and the button stop and dim, and the edges darken round the after panel
         css += (f"{s}~.cp-top .ttl,{s}~.cp-top .btn{{{STILL}}}{s}~.cp-top .btn::after{{{FADE}}}"
-                + hush_base(f"#{u} .cp-top .btn::after"))
+                + hush_base(f"#{u} .cp-top .btn::after") + hush_dim(u, "50% 60%", s))
     return body, css
 
 
@@ -1091,7 +1098,21 @@ def render_loop(spec, u, lv):
     ttl = f'<div class="ttl">{E(spec["title"])}</div>'
     if laps:   # beside the title, never on the ring: the SVG stays as it was and the height does not grow on wide screens
         ttl = f'<div class="lp-hd">{ttl}{laps}</div>'
-    return f'{ttl}{svg}', ""
+    if not hush_on(spec, "loop"):
+        return f'{ttl}{svg}', ""
+    # Hush has no click here: the answer comes once the steps have lit up round the ring (with laps, at the end of the
+    # round in which the last badge lands). Every motion stops right then: a fractional iteration count with fill
+    # "forwards" holds the frame it reached, which is what pausing at that moment would show (CSS cannot pause on a timer).
+    k = len(spec["laps"]) if isinstance(spec.get("laps"), list) else max(spec.get("laps") or 1, 1) - 1
+    t = n * math.ceil(max(n, (.6 + .8 * (k - 1) + .5) if laps else 0) / n)   # whole rounds of step lights
+    hold = lambda dur: f"animation-iteration-count:{t / dur:.4g};animation-fill-mode:forwards"
+    css = (f"#{u} .lp-flow{{animation:dd-lpflow 1.8s linear 0s {t / 1.8:.4g} forwards,dd-hfade 1.2s ease {t}s both}}"
+           f"#{u} .lp-node rect{{animation-iteration-count:{t // n}}}#{u} .lp-back{{{hold(1)}}}"
+           f"#{u} .ttl{{{hold(5)}}}#{u} .lp-goal rect{{{hold(1.8)}}}"   # only count and fill: lv1 keeps animation:none
+           f"#{u} .lp-ct,#{u} .lp-cs{{transform-box:fill-box;transform-origin:center;animation:var(--enter) .55s ease-out {t}s both}}"
+           f"#{u} .dd-dim{{animation:dd-dimin 1.2s ease {t}s both}}#{u} .lp-lg text{{fill:var(--rt)!important}}"
+           + hush_dim(u, f"50% {58 if goal else 55}%"))
+    return f'{HUSH_DIM}{ttl}{svg}', css
 
 
 def lap_badges(spec):
@@ -1177,7 +1198,7 @@ def render_flow(spec, u, lv):
         pans += f'<div class="fl-p fl-p{i}">{inner}</div>'
     # judge line: the lane's edge the picked step's card slides into, like a rhythm-game note reaching its line
     jl = '<span class="fl-jl" aria-hidden="true"></span>' if judge else ""
-    body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
+    body = (f'{inp}{HUSH_DIM if hush else ""}<div class="ttl">{E(spec["title"])}</div>'
             f'<div class="fl-track{" fl-many" if n > 4 else ""}">{track}</div>'
             f'<div class="fl-panel{" fl-judge" if judge else ""}">{jl}{pans}</div>')
     dot_on = ("background:#9a3412;border-color:transparent;color:#fff" if lv == 1 else
@@ -1199,7 +1220,8 @@ def render_flow(spec, u, lv):
                 css.append(f"{sel}~.fl-track .fl-fs{{visibility:hidden}}")
             if hush:
                 css.append(f"{sel}~.ttl,{sel}~.fl-track .fl-step:not(.fl-focal) .fl-dot{{{STILL}}}"
-                           f"{sel}~.fl-track::before{{{FADE}}}" + hush_base(f"#{u} .fl-track::before"))
+                           f"{sel}~.fl-track::before{{{FADE}}}" + hush_base(f"#{u} .fl-track::before")
+                           + hush_dim(u, "50% 75%", sel))   # round the detail panel in the lower part
     # PDF has no clicks and no room for every detail: print the focal step
     css.append(f"@media print{{#{u} .fl-p{{display:none!important}}#{u} .fl-p{focal}{{display:block!important}}#{u} .fl-p .rb{{margin:0}}"
                f"#{u} .fl-dot{{background:var(--card)!important;color:var(--b)!important;border-color:var(--b)!important}}"

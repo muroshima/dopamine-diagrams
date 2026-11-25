@@ -5,6 +5,7 @@
   --bg:#fffaf3; --ink:#1f2328; --mut:#5b636e; --line:#e3d9cc; --card:#ffffff;
   --a:#ea580c; --as:#ffedd5; --b:#2563eb; --bs:#dbeafe; --g:#15803d; --gs:#dcfce7;
   --r:#dc2626; --rs:#fee2e2; --y:#ca8a04; --ys:#fef9c3; --yt:#92400e; --at:#c2410c; --bt:#1d4ed8; --v:#7c3aed; --glow:#ffb300;
+  --rt:#b91c1c; --hdim:rgba(0,0,0,.08); --hfade:.35;
   --enter:stamp; --spin:1.8s; --pulse:1.6s;
   font-family:system-ui,-apple-system,"Hiragino Sans","Noto Sans JP","Segoe UI",sans-serif;
   color:var(--ink); background:var(--bg); padding:16px; font-size:14px; line-height:1.6;
@@ -97,6 +98,18 @@
 @keyframes dd-cut{from{transform:translateX(-40%) skewX(-12deg);opacity:0}to{transform:skewX(-12deg);opacity:1}}   /* short slide: big fast sweeps make people queasy */
 .dd.lv1 .ci{transform:none;background:#9a3412;box-shadow:none;animation-name:pop!important}.dd.lv1 .ci>span{transform:none}   /* calm: no slant, white on #9a3412 (7:1) */
 
+/* Hush dim (spec hush): <i class="dd-dim"> darkens the background round the focus over 1.2s, and back over 1.2s. It sits
+   under every box and every text (z-index:-1; the pattern gives the root isolation:isolate so it stays above the root's
+   background), so only text drawn straight on the background is on it, and the title band is masked out: at the darkest
+   corner --mut keeps 4.9:1 and --rt 5.2:1 (--hdim .08). Dark mode takes more (--hdim .55, --hfade .2): darkening a dark background barely shows. */
+.dd .dd-dim{position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:0;transition:opacity 1.2s ease;
+  background:radial-gradient(ellipse at var(--dim-at,50% 60%),transparent 40%,var(--hdim) 100%);
+  /* the title band stays undimmed: the rainbow title's lighter stops must not get fainter */
+  -webkit-mask-image:linear-gradient(transparent var(--dim-top,64px),#000 calc(var(--dim-top,64px) + 24px));
+  mask-image:linear-gradient(transparent var(--dim-top,64px),#000 calc(var(--dim-top,64px) + 24px))}
+@keyframes dd-dimin{to{opacity:1}}
+@keyframes dd-hfade{to{opacity:var(--hfade)}}
+
 @keyframes dd-passbar{from{border-color:var(--b)}}
 @keyframes dd-passin{from{background:var(--bs)}}
 
@@ -138,8 +151,9 @@
 .dd.lv3{--spin:1.2s;--pulse:1.2s}
 
 /* Motion off: reduced-motion users and print/PDF (slides). Base styles are the final frame. */
-@media (prefers-reduced-motion:reduce){.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
-@media print{.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}
+  .dd .dd-dim{display:none}}   /* without the 1.2s fade it would be a sudden dim */
+@media print{.dd *,.dd *::before,.dd *::after{animation:none!important;transition:none!important}.dd .dd-dim{display:none}}
 /* Chrome's PDF output draws background-clipped gradient text with artefacts: print gold and the title as solid colour */
 @media print{.dd .ci{background:none!important;border:2px solid #9a3412;box-shadow:none}.dd .ci>span{color:#9a3412}
   .dd .tb.t4{background:var(--card);border-color:#b91c1c;color:#b91c1c;text-shadow:none}   /* no-background printing must not make the top level the faintest */
