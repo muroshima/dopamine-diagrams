@@ -25,5 +25,7 @@
     }
   ],
   "note": "Example content for the flow pattern",
-  "hush": true
+  "hush": true,
+  "judge": true,
+  "foresee": true
 }

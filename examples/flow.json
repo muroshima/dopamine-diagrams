@@ -25,5 +25,7 @@
     }
   ],
   "note": "flow のサンプルです",
-  "hush": true
+  "hush": true,
+  "judge": true,
+  "foresee": true
 }

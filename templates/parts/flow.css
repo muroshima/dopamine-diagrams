@@ -18,6 +18,19 @@
 .dd .fl-tx{font-size:14px}
 .dd .fl-p .rb{border-radius:12px;margin:-4px}
 .dd.lv1 .fl-track::before{animation:none;background:var(--line)}
+/* Judge line (spec judge): the picked step's card slides in from the right (0.7s, once) and settles against a lit line
+   on the panel's left edge; the line then flares once (1s up, 1s down) and stays lit. A border, so it prints.
+   build.py writes one keyframes name per step (same frames), so picking another step restarts the flare. */
+.dd .fl-panel.fl-judge{position:relative;padding-left:26px;overflow:hidden}   /* beats the phone padding below; clips the sliding card */
+.dd .fl-jl{position:absolute;left:9px;top:10px;bottom:10px;border-left:4px solid var(--a);border-radius:2px;
+  box-shadow:0 0 6px var(--glow)}
+.dd .fl-judge .fl-ph{animation:dd-flnote .7s cubic-bezier(.2,.7,.3,1) both}
+@keyframes dd-flnote{from{transform:translateX(120px);opacity:0}to{transform:none;opacity:1}}
+/* Foresee (spec foresee): a still ★ mark in the high importance tier under the focal step's label, hidden once opened */
+.dd .fl-fs{padding:0 7px;white-space:normal;max-width:100%;overflow-wrap:anywhere;justify-content:center;text-align:center}
+.dd.lv1 .fl-jl{box-shadow:none}
+.dd.lv1 .fl-judge .fl-ph{animation:none}
+@media print{.dd .fl-jl{box-shadow:none}}
 @media (max-width:560px){
   .dd .ttl{font-size:14px}
   .dd .fl-many{flex-wrap:wrap;justify-content:center;row-gap:8px}
