@@ -45,5 +45,6 @@
     "before": 24,
     "after": 12,
     "goal": 15
-  }
+  },
+  "hush": true
 }

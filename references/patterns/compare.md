@@ -28,6 +28,7 @@
 | `metric` | 任意。`{"label", "before", "after", "unit"}`。before と after は0以上の整数。ビフォー側に before の値、アフター側に after の値を出し、アフターに切り替えた瞬間に before から after へ数字が数え上がる（下がる）。焦点の数字は1つだけにする |
 | `metric.goal`, `metric.better` | 任意。goal を書くと、両側に目標の線が入ったゲージが出て、「到達 ✓」か「未達」を言葉と枠で示す。better は `lower`（小さいほどよい）か `higher`。省略すると before から after への向きで決める（before と after が同じ値ならエラーになるので書く）。目標の文字（「目標 15件」）は短く |
 | `before.cutin`, `after.cutin` | 任意。パネルが出たときに斜めの帯で割り込む一言。ふつうは `after` にだけ書く |
+| `hush` | 任意。`true` にすると、アフターを開いたときに見出しとボタンの動きが止まり、ボタンを横切る光が薄くなる（文字は薄くしない） |
 
 ## 上限
 

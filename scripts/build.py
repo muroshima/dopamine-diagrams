@@ -148,6 +148,25 @@ def tier_badge(spec, item, where):
     return f'<span class="tb t{t}"><span class="st" aria-hidden="true">{"★" * t}</span>{E(word)}</span>'
 
 
+def hush_on(spec, where):
+    """spec["hush"]: when the answer appears, everything else stops and dims (a pachinko freeze)."""
+    h = spec.get("hush", False)
+    if not isinstance(h, bool):
+        fail(f"{where}: hush must be true or false; got {h!r:.40}")
+    return h
+
+
+# Hush stops motion; only decoration without text fades (text keeps its contrast, also in print).
+STILL = "animation-play-state:paused!important"
+FADE = "animation-play-state:paused!important;opacity:.35"
+
+
+def hush_base(sel):
+    """Fade in and out over 1s both ways; no fade with reduced motion (it would be a sudden dim) or in print."""
+    return (f"{sel}{{transition:opacity 1s ease}}"
+            f"@media (prefers-reduced-motion:reduce){{{sel}{{opacity:1!important}}}}@media print{{{sel}{{opacity:1!important}}}}")
+
+
 def cutin(item, where):
     """A slanted band that cuts in once with a one-line verdict, like a pachinko cut-in. "" when absent."""
     t = item.get("cutin")
@@ -879,6 +898,9 @@ def render_compare(spec, u, lv):
            f"{s}~.cp-stage .cp-after .gg-fill{{animation:dd-fill 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
            f"{s}~.cp-stage .cp-after .gg-ok .gg-st{{animation:var(--enter) .55s ease-out 1.6s both}}"
            f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")
+    if hush_on(spec, "compare"):   # when "after" shows, the title and the button stop and dim
+        css += (f"{s}~.cp-top .ttl,{s}~.cp-top .btn{{{STILL}}}{s}~.cp-top .btn::after{{{FADE}}}"
+                + hush_base(f"#{u} .cp-top .btn::after"))
     return body, css
 
 
@@ -949,6 +971,7 @@ def render_flow(spec, u, lv):
     if not 2 <= n <= 7:
         fail(f"flow: 2 to 7 steps; got {n}")
     focal = as_index(spec.get("focal", n - 1), n, "flow: focal")
+    hush = hush_on(spec, "flow")
     inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
     track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}"><span class="fl-dot">{i+1}</span>'
                     f'<span class="fl-lb">{E(st["label"])}</span></label>' for i, st in enumerate(steps))
@@ -971,6 +994,9 @@ def render_flow(spec, u, lv):
         css.append(f"{sel}~.fl-panel .fl-p{i}{{display:block;animation:pop .3s ease}}")
         if i == focal:
             css.append(f"{sel}~.fl-panel .fl-p{i} .rb{{animation:var(--enter) .55s ease-out both}}")
+            if hush:
+                css.append(f"{sel}~.ttl,{sel}~.fl-track .fl-step:not(.fl-focal) .fl-dot{{{STILL}}}"
+                           f"{sel}~.fl-track::before{{{FADE}}}" + hush_base(f"#{u} .fl-track::before"))
     # PDF has no clicks and no room for every detail: print the focal step
     css.append(f"@media print{{#{u} .fl-p{{display:none!important}}#{u} .fl-p{focal}{{display:block!important}}#{u} .fl-p .rb{{margin:0}}"
                f"#{u} .fl-dot{{background:var(--card)!important;color:var(--b)!important;border-color:var(--b)!important}}"
