@@ -24,6 +24,7 @@ Use it for linear processes: release steps, onboarding, an incident timeline.
 | `steps[].label` | ≤ 10 ASCII / 6 CJK characters; it sits under a 44px circle |
 | `steps[].detail` | One or two sentences |
 | `focal` | 0-based index of the step that matters most; default is the last. build.py rejects an index outside the steps |
+| `hush` | `true`: when the focal step is picked, the title and the other steps stop moving, and the running line stops and fades over 1s (a pachinko freeze). Text never fades, so it stays as readable. Focus without adding effects. Avoid it with `focal: 0`: that step is picked from the start |
 
 ## Limits
 

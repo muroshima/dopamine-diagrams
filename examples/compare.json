@@ -43,5 +43,6 @@
     "after": 12,
     "unit": "件",
     "goal": 15
-  }
+  },
+  "hush": true
 }
