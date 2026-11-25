@@ -206,7 +206,7 @@ def _arch_svg(spec, u, mode, focal):
     if mode == "wide":
         # Column widths come from the node text, gaps from the edge labels between neighbouring tiers.
         # If that needs more than 600 user units, the viewBox widens and every font grows with it, so text
-        # still renders >= 12px when the embed is only 529px wide (Zenn PC at ~561px). Iterate to settle.
+        # still renders >= 12px when the embed is only 529px wide (Zenn PC at ~561px). solve() picks the font.
         W, top, gap, MINW, NARROWEST = 600, 40, 18, 600, 529
 
         def measure(FS, FSS, FSE, with_names):
@@ -225,6 +225,7 @@ def _arch_svg(spec, u, mode, focal):
             # Fonts scale with W (the SVG is squeezed to NARROWEST px) and W grows with the fonts. Take the
             # smallest font, in 0.5 steps up to FMAX, whose text still renders >= 12.3px at NARROWEST.
             # None fits -> text grows faster than W; the caller warns and check.mjs reports small text.
+            # FMAX bounds the search; past it the fixed parts (line widths, corner radii) look tiny anyway.
             FMAX = 64
             f = 14.0
             while f <= FMAX:
@@ -232,7 +233,7 @@ def _arch_svg(spec, u, mode, focal):
                 if round(12.3 * W / NARROWEST * 2) / 2 <= f:
                     return True, f + 2, f, f, colw, gaps, need, W
                 f += 0.5
-            return (False, 16, 14, 14) + measure(16, 14, 14, with_names)
+            return (False, 16.0, 14.0, 14.0) + measure(16, 14, 14, with_names)
 
         ok, FS, FSS, FSE, colw, gaps, need, W = solve(True)
         if not ok:
@@ -251,8 +252,10 @@ def _arch_svg(spec, u, mode, focal):
                       f"(by estimate, text may drop below 12px at {NARROWEST}px); if check.mjs reports small text, "
                       f"shorten them", file=sys.stderr)
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
-        ty = max(27, math.ceil(FSS + 8))   # tier name baseline: Japanese ascent is ~1em, keep it under the band top (y=6)
+        ty = max(27, math.ceil(1.1 * FSS + 6))   # tier name baseline: ascent ~1em (Japanese), ~1.1em (emoji); band top y=6
         top = max(top, ty + math.ceil(0.3 * FSS) + 6)   # room for the descent before the first node
+        if any(e.get("label") and tid[e["from"]] == tid[e["to"]] for e in edges):
+            gap = max(gap, FSE + 14)   # a same-tier edge label sits between two stacked nodes
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
