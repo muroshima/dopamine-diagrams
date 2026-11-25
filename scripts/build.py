@@ -623,6 +623,9 @@ def _arch_svg(spec, u, mode, focal):
         far = max((x for sg in curves for k in range(13) for x in [_bez(*sg, k / 12)[0]]), default=0)
         if far > W - 4:
             W = far + 8
+            if FSS * 529 / W < 12:   # the fonts were sized for the narrower W
+                print("WARN: architecture same-tier edges widen the side-by-side layout so text may drop below 12px at "
+                      "529px; shorten their labels or connect fewer nodes inside a tier", file=sys.stderr)
     self_check(routes, pts_of)
     if mode != "wide":
         # Tier names sit on the top edge of their band, preferably where no edge passes (they are drawn over the
