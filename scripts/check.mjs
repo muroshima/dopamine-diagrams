@@ -124,10 +124,11 @@ const PROBE = () => {
   for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
     if (!svg.getClientRects().length) continue;
     const nodes = [...svg.querySelectorAll(".ar-node rect")].map((n) => n.getBBox());
-    for (const lr of svg.querySelectorAll("rect.ar-elabel-bg")) {
-      const l = lr.getBBox();
-      if (nodes.some((n) => l.x < n.x + n.width - 3 && l.x + l.width > n.x + 3 && l.y < n.y + n.height - 3 && l.y + l.height > n.y + 3))   // 3px: touching a corner is fine
-        clipped.push(`${r.id} edge label «${lr.nextElementSibling?.textContent.slice(0, 24) ?? ""}» under a node`);
+    for (const lt of svg.querySelectorAll("text.ar-elabel")) {   // the text itself and its background (sized from an estimate)
+      const boxes = [lt.getBBox(), lt.previousElementSibling?.getBBox()].filter(Boolean);
+      const hit = (l) => nodes.some((n) => l.x < n.x + n.width - 3 && l.x + l.width > n.x + 3 && l.y < n.y + n.height - 3 && l.y + l.height > n.y + 3);
+      if (boxes.some(hit))   // 3 SVG units of slack: touching a corner is fine
+        clipped.push(`${r.id} edge label «${lt.textContent.slice(0, 24)}» under a node`);
     }
   }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
@@ -156,6 +157,10 @@ const PROBE = () => {
 async function runStates(page, where, maxH, shotFn) {
   const labels = await page.$$("label[for]");
   const check = async (state) => {
+    // Finish entrance animations (stamp/pop) first: mid-animation a stamp is scaled up to 2.2x and would read
+    // as overflow. Their end state is the base style, so this measures what the reader sees once it settles.
+    await page.evaluate(() => document.getAnimations().forEach((a) => {
+      if (a.effect?.getComputedTiming().iterations !== Infinity) a.finish(); }));
     const r = await page.evaluate(PROBE);
     const w = `${where} [${state}]`;
     if (maxH && r.h > maxH) fail(w, `height ${r.h}px > ${maxH}px`);

@@ -337,6 +337,13 @@ def _arch_svg(spec, u, mode, focal):
                 mx, my = _bez(p0, p1, p2, p3, lo_t)
             lw = text_w(e["label"], FSE) + 10
             lrects.append((mx - lw / 2, mx + lw / 2, my - FSE / 2 - 4, my + FSE / 2 + 4))
+            for nid2, (ncx, ncy, nw2, nh2, _) in pos.items():
+                if (mx - lw / 2 < ncx + nw2 / 2 - 3 and mx + lw / 2 > ncx - nw2 / 2 + 3
+                        and my - FSE / 2 - 4 < ncy + nh2 / 2 - 3 and my + FSE / 2 + 4 > ncy - nh2 / 2 + 3):
+                    print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) sits on node '{nid2}' "
+                          f"in the {mode} layout and will be hidden; shorten it, drop it, or connect neighbouring nodes",
+                          file=sys.stderr)
+                    break
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
