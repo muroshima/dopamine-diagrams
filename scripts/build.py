@@ -356,12 +356,22 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     eds, curves, lrects, routes = [], [], [], []
-    extra_h, nbulge, lanes = 0, {}, {}
+    extra_h, lanes = 0, {}
+
+    def bulged(e):
+        return tid[e["from"]] == tid[e["to"]] and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)
+    brank = {}
+    for t_i in range(T):
+        group = sorted((i for i, e in enumerate(edges) if bulged(e) and tid[e["from"]] == t_i),
+                       key=lambda i: abs(nord[edges[i]["from"]] - nord[edges[i]["to"]]))
+        for k, i in enumerate(group):
+            brank[i] = k
 
     def no_lane(e, tier_name):
-        print(f"WARN: architecture edge {e['from']}->{e['to']} has no free lane through tier '{tier_name}' in the {mode} "
-              f"layout and runs under a node; put fewer nodes in that tier or connect neighbouring tiers", file=sys.stderr)
-    for e in edges:
+        print(f"WARN: architecture edge {e['from']}->{e['to']} has no clear lane through tier '{tier_name}' in the {mode} "
+              f"layout; it may run under a node or along another line. Put fewer nodes in that tier or connect "
+              f"neighbouring tiers", file=sys.stderr)
+    for ei, e in enumerate(edges):
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
             raise SystemExit(f'edge {e["from"]}->{e["to"]} goes backwards; order tiers so edges flow forward')
@@ -374,10 +384,11 @@ def _arch_svg(spec, u, mode, focal):
                 segs = [vseg(p0, p3)]
             elif same:   # swing out beside the column; nested when several share a side
                 side = 1 if (a[4] < T - 1 or T == 1) else -1
-                k = nbulge[(a[4], side)] = nbulge.get((a[4], side), -1) + 1
+                k = brank[ei]
                 edge_x = band_x[a[4]][1] if side > 0 else band_x[a[4]][0]
-                g = edge_x + side * (max(14, lwid / 2 + 10) + 10 * k + 6 * (abs(nord[e["from"]] - nord[e["to"]]) - 1))
-                dy = (a[3] / 4) * (1 if b[1] > a[1] else -1)   # off the side centre, where tier-to-tier lines leave
+                g = edge_x + side * (max(14, lwid / 2 + 10) + 10 * k)
+                # off the side centre (where tier-to-tier lines leave), and apart for each nested bulge
+                dy = min(a[3] / 2 - 4, a[3] * (.22 + .1 * k)) * (1 if b[1] > a[1] else -1)
                 segs = [bulge((a[0] + side * a[2] / 2, a[1] + dy), (b[0] + side * b[2] / 2, b[1] - dy), 0, g)]
             else:        # cross intermediate columns through free space between their nodes and other such lines
                 start, end = (a[0] + a[2] / 2, a[1]), (b[0] - b[2] / 2, b[1])
@@ -389,7 +400,9 @@ def _arch_svg(spec, u, mode, focal):
                     blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
                     yy = free_spot(ty + 8, H - 8, blocks, target)
                     if yy is None:
-                        no_lane(e, tiers[ti]["name"]); yy = target
+                        no_lane(e, tiers[ti]["name"])
+                        yy = free_spot(ty + 8, H - 8, blocks[:len(blocks) - len(lanes.get(ti, []))], target)
+                        yy = target if yy is None else yy
                     lanes.setdefault(ti, []).append(yy)
                     pts += [(x0b, yy), (x1b, yy)]
                 pts.append(end)
@@ -400,13 +413,20 @@ def _arch_svg(spec, u, mode, focal):
                 p0 = (a[0] + (a[2]/2 if right else -a[2]/2), a[1]); p3 = (b[0] - (b[2]/2 if right else -b[2]/2), b[1])
                 segs = [hseg(p0, p3)]
             elif same:   # swing below the row into the gap (a second one above it); the last row gets extra room
-                k = nbulge[(a[4], 0)] = nbulge.get((a[4], 0), -1) + 1
-                side = -1 if (k % 2 and a[4] > 0) else 1
+                k = brank[ei]
+                up = a[4] > 0 and k % 2 == 1               # first row: always below
+                level = k // 2 if a[4] > 0 else k
+                depth = 8 + 7 * level
+                if depth > rowgap - 4:
+                    print(f"WARN: architecture tier '{tiers[a[4]]['name']}' has too many same-tier edges for the phone "
+                          f"layout; they will overlap. Connect fewer nodes inside the tier", file=sys.stderr)
                 top_y = band_top[a[4]]
-                g = top_y + bh + rowgap / 2 if side > 0 else top_y - rowgap / 2
+                side = -1 if up else 1
+                g = top_y + bh + depth if side > 0 else top_y - depth
                 if side > 0 and a[4] == T - 1:
-                    extra_h = max(extra_h, rowgap)
-                dx = (a[2] / 4) * (1 if b[0] > a[0] else -1)   # off the bottom centre, where row-to-row lines leave
+                    extra_h = max(extra_h, depth + 12)
+                # off the bottom centre (where row-to-row lines leave), and apart for each nested bulge
+                dx = min(a[2] / 2 - 4, a[2] * (.22 + .1 * level)) * (1 if b[0] > a[0] else -1)
                 segs = [bulge((a[0] + dx, a[1] + side * a[3] / 2), (b[0] - dx, b[1] + side * b[3] / 2), 1, g)]
             else:        # rows in between: go down through free space between their nodes and other such lines
                 start, end = (a[0], a[1] + a[3] / 2), (b[0], b[1] - b[3] / 2)
@@ -418,7 +438,9 @@ def _arch_svg(spec, u, mode, focal):
                     blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
                     xx = free_spot(6, W - 6, blocks, target)
                     if xx is None:
-                        no_lane(e, tiers[ti]["name"]); xx = target
+                        no_lane(e, tiers[ti]["name"])
+                        xx = free_spot(6, W - 6, blocks[:len(blocks) - len(lanes.get(ti, []))], target)
+                        xx = target if xx is None else xx
                     lanes.setdefault(ti, []).append(xx)
                     pts += [(xx, y0b), (xx, y0b + bh)]
                 pts.append(end)
