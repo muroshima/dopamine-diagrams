@@ -18,7 +18,24 @@
 .dd .ex-good .in{padding:10px 12px}
 .dd .ex-good b{display:inline-block;font-size:15px;margin-bottom:2px}
 .dd .ex-ok{font-weight:800;font-size:16px}
+/* reveal:"flip": the answer is a face-down card. Both sides share one grid cell, so the card is as tall as the
+   taller side. One turn of .6s, no loop. Motion off: it switches sides at once. Print: the face only. */
+.dd .ex-card{margin-top:10px;perspective:900px}
+.dd .ex-cin{display:grid;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.dd .ex-back,.dd .ex-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:10px}
+.dd .ex-back{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;
+  text-align:center;font-weight:800;font-size:14px;border:2px dashed var(--mut);
+  background:repeating-linear-gradient(45deg,var(--card) 0 10px,var(--as) 10px 20px)}
+.dd .ex-q{font-size:30px;font-weight:900;line-height:1;color:var(--a)}
+.dd .ex-face{transform:rotateY(180deg);visibility:hidden;transition:visibility 0s .3s}   /* not read before it turns */
+.dd .ex-back{transition:visibility 0s}
+.dd .ex-card .ex-face{margin:0}
+.dd .ex-unflip{position:absolute;top:4px;right:6px;padding:5px 6px;font-size:12px;color:var(--mut);text-decoration:underline;cursor:pointer}   /* adds no height; 24px+ target */
+@media print{.dd .ex-back,.dd .ex-unflip{display:none}.dd .ex-face{transform:none;visibility:visible}.dd .ex-cin{transform:none!important}}
 @media (max-width:560px){
+  .dd .ex-card{margin-top:6px}
+  .dd .ex-back{flex-direction:row;flex-wrap:wrap;padding:8px 10px;gap:6px 10px;font-size:13px}
+  .dd .ex-q{font-size:20px}
   .dd .ex-g{flex-direction:column}
   .dd .ex-ls{flex:none;flex-direction:row;flex-wrap:wrap}
   .dd .ex-ls label{font-size:12px;padding:4px 8px;gap:4px}

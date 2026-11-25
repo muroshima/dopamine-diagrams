@@ -104,12 +104,14 @@ DEFAULTS = {
            "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
            "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
            "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要",
-           "goal": "目標", "reached": "到達 ✓", "not_reached": "未達"},
+           "goal": "目標", "reached": "到達 ✓", "not_reached": "未達",
+           "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
            "gem_title": "The one that matters", "before": "Before", "after": "After", "tier1": "Low", "tier2": "Medium", "tier3": "High",
-           "tier4": "Critical", "goal": "Goal", "reached": "Reached ✓", "not_reached": "Not yet"},
+           "tier4": "Critical", "goal": "Goal", "reached": "Reached ✓", "not_reached": "Not yet", "flip": "Flip ▶",
+           "unflip": "Hide", "hidden": "Guess the answer, then flip"},
 }
 
 
@@ -161,17 +163,46 @@ def render_explorer(spec, u, lv):
     tier_count_check(spec, cases, "explorer")
     bad_l = spec.get("bad_label", T(spec, "bad_label"))
     good_l = spec.get("good_label", T(spec, "good_label"))
+    reveal = spec.get("reveal")
+    if reveal not in (None, "stamp", "flip"):
+        fail(f"explorer: reveal must be 'stamp' or 'flip'; got {reveal!r:.40}")
+    flip = reveal == "flip"
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
                   for i in range(len(cases)))
+    if flip:   # one checkbox per case turns its card over
+        inp += "".join(f'<input class="h" type="checkbox" id="{u}-f{i}">' for i in range(len(cases)))
     labs = "".join(f'<label for="{u}-m{i}"><span class="ex-no">{i+1:02d}</span>{E(c["label"])}</label>'
                    for i, c in enumerate(cases))
+    def text_opt(d, key, default, where, limit):
+        v = d.get(key, default)
+        if not isinstance(v, str) or not v.strip():
+            fail(f"explorer: {where}{key} must be a non-empty string; got {v!r:.40}")
+        if text_w(v, 14) > limit:
+            print(f"WARN: explorer: {where}{key} '{v[:30]}' is long; the card may not fit the phone layout",
+                  file=sys.stderr)
+        return v
+    flip_l = text_opt(spec, "flip_label", T(spec, "flip"), "", 120) if flip else ""
+    unflip_l = text_opt(spec, "unflip_label", T(spec, "unflip"), "", 70) if flip else ""
+
+    def flip_card(i, c):
+        """A face-down card, like a gacha pull: the back says what to expect, flipping shows the answer."""
+        hint = text_opt(c, "hint", T(spec, "hidden"), f"case {i+1} ", 280)
+        return (f'<div class="ex-card"><div class="ex-cin">'
+                f'<div class="ex-back"><span class="ex-q" aria-hidden="true">?</span><span>{E(hint)}</span>'
+                f'<label for="{u}-f{i}" class="btn shine">{E(flip_l)}</label></div>'
+                f'<div class="ex-face ex-good rb"><div class="in"><b class="gold">{E(good_l)}</b>'
+                f'<div class="ex-ok">{E(c["good"])}</div>'
+                f'<label for="{u}-f{i}" class="ex-unflip">{E(unflip_l)}</label>'
+                f'</div></div></div></div>')
+
     pans = ""
     for i, c in enumerate(cases):
         bad = (f'<div class="ex-bad"><b>{E(bad_l)}</b><s>{E(c["bad"])}</s></div>' if c.get("bad") else "")
         pans += (f'<div class="ex-p ex-p{i}"><div class="ex-hd"><span class="ex-num gold">{i+1:02d}</span>'
                  f'<span class="ex-sit">{E(c.get("situation", c["label"]))}</span>{tier_badge(spec, c, f"explorer case {i+1}")}</div>{bad}'
-                 f'<div class="ex-good rb"><div class="in"><b class="gold">{E(good_l)}</b>'
-                 f'<div class="ex-ok">{E(c["good"])}</div></div></div></div>')
+                 + (flip_card(i, c) if flip else
+                    f'<div class="ex-good rb"><div class="in"><b class="gold">{E(good_l)}</b>'
+                    f'<div class="ex-ok">{E(c["good"])}</div></div></div>') + '</div>')
     body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
             f'<div class="ex-g"><div class="ex-ls">{labs}</div><div class="ex-ps">{pans}</div></div>')
     chip = CHIP_ON_LV1 if lv == 1 else CHIP_ON
@@ -181,7 +212,15 @@ def render_explorer(spec, u, lv):
         css.append(f"{sel} label[for={u}-m{i}]{{{chip}}}{sel} label[for={u}-m{i}] .ex-no{{color:#fff}}")
         css.append(f"#{u}-m{i}:focus-visible~.ex-g label[for={u}-m{i}]{{outline:2px solid var(--b);outline-offset:1px}}")
         css.append(f"{sel} .ex-p{i}{{display:block;animation:pop .3s ease}}")
-        css.append(f"{sel} .ex-p{i} .ex-good{{animation:var(--enter) .55s ease-out .15s both}}")
+        if flip:
+            # only the shown case's card can be focused or read; the hidden side of a card is hidden from both
+            css.append(f"#{u}-m{i}:not(:checked)~#{u}-f{i}{{visibility:hidden}}"
+                       f"#{u}-f{i}:checked~.ex-g .ex-p{i} .ex-face{{visibility:visible;transition-delay:0s}}"
+                       f"#{u}-f{i}:checked~.ex-g .ex-p{i} .ex-back{{visibility:hidden;transition-delay:.3s}}")
+            css.append(f"#{u}-f{i}:checked~.ex-g .ex-p{i} .ex-cin{{transform:rotateY(180deg)}}"
+                       f"#{u}-f{i}:focus-visible~.ex-g .ex-p{i} label[for={u}-f{i}]{{outline:2px solid var(--b);outline-offset:2px}}")
+        else:
+            css.append(f"{sel} .ex-p{i} .ex-good{{animation:var(--enter) .55s ease-out .15s both}}")
     return body, "".join(css)
 
 
