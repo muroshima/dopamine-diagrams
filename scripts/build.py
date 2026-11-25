@@ -16,11 +16,18 @@ TPL = ROOT / "templates"
 ZENN_MAX_BYTES = 50 * 1024
 
 DARK_VARS = ("--bg:#161b22;--ink:#e6edf3;--mut:#9da7b3;--line:#30363d;--card:#0d1117;--a:#fb923c;--as:#431407;"
-             "--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;--yt:#fde68a;--bt:#93c5fd;"
+             "--at:#fb923c;--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;--yt:#fde68a;--bt:#93c5fd;"
              "--v:#a78bfa;--glow:#ffd54f")
 CHIP_ON = ("background:linear-gradient(180deg,#cc4a10,#a3360b);border-color:transparent;color:#fff;"
            "animation:dd-neon var(--pulse) ease-in-out infinite")
 CHIP_ON_LV1 = "background:#9a3412;border-color:transparent;color:#fff"   # white on --a is only 3.4:1
+
+
+def on_print(sel):
+    """A picked chip, dot or step is white text on a filled background. Printing without backgrounds would leave
+    white on paper, so print it as an outlined box in dark orange."""
+    return (f"@media print{{{sel}{{background:var(--card)!important;color:#9a3412!important;"
+            f"outline:2px solid #9a3412;outline-offset:-2px}}}}")
 
 def E(s):
     """Escape user text for HTML. Newlines become spaces (a newline + ``` would close the Zenn fence)."""
@@ -272,7 +279,8 @@ def render_explorer(spec, u, lv):
     css = []
     for i in range(len(cases)):
         sel = f"#{u}-m{i}:checked~.ex-g"
-        css.append(f"{sel} label[for={u}-m{i}]{{{chip}}}{sel} label[for={u}-m{i}] .ex-no{{color:#fff}}")
+        css.append(f"{sel} label[for={u}-m{i}]{{{chip}}}{sel} label[for={u}-m{i}] .ex-no{{color:#fff}}"
+                   + on_print(f"{sel} label[for={u}-m{i}],{sel} label[for={u}-m{i}] .ex-no"))
         css.append(f"#{u}-m{i}:focus-visible~.ex-g label[for={u}-m{i}]{{outline:2px solid var(--b);outline-offset:1px}}")
         css.append(f"{sel} .ex-p{i}{{display:block;animation:pop .3s ease}}{sel} .ex-p{i} .ci{{animation:dd-cut .55s cubic-bezier(.2,.8,.2,1) both}}")
         if flip:
@@ -1125,7 +1133,7 @@ def render_ladder(spec, u, lv):
     for i in range(n):
         sel = f"#{u}-l{i}:checked"
         css.append(f"{sel}~.ld-st label[for={u}-l{i}]{{transform:translateY(-5px);{neon}}}"
-                   f"{sel}~.ld-st label[for={u}-l{i}]>.in{{{on}}}"
+                   f"{sel}~.ld-st label[for={u}-l{i}]>.in{{{on}}}" + on_print(f"{sel}~.ld-st label[for={u}-l{i}]>.in") +
                    f"#{u}-l{i}:focus-visible~.ld-st label[for={u}-l{i}]{{outline:2px solid var(--b);outline-offset:2px}}"
                    f"{sel}~.ld-pn .ld-p0{{display:none}}{sel}~.ld-pn .ld-q{i}{{display:block;animation:pop .35s ease}}"
                    f"{sel}~.ld-pn .ld-q{i} .gold{{animation:var(--enter) .55s ease-out .2s both{pulse}}}")
@@ -1283,7 +1291,7 @@ def render_combo(spec, u, lv):
                f"{allc}~.cb-out .cb-stamp{{animation:var(--enter) .6s ease-out .45s both{pulse}}}")
     # PDF has no clicks: print every condition met and the verdict
     css.append(f"@media print{{#{u} .cb-i{{border-style:solid!important;border-color:var(--g)!important;box-shadow:none!important}}"
-               f"#{u} .cb-box{{background:var(--g);border-color:var(--g);color:var(--card)}}"
+               f"#{u} .cb-box{{background:var(--card)!important;border-color:#15803d!important;color:#15803d!important}}"   # no-background printing
                f"#{u} .cb-no,#{u} .cb-last,#{u} .cb-s0,#{u} .cb-s1,#{u} .cb-lock{{display:none!important}}"
                f"#{u} .cb-ok,#{u} .cb-s2{{display:inline-block!important}}#{u} .cb-win{{display:block!important}}"
                f"#{u} .cb-n::before{{content:\"{n}\"}}#{u} .cb-bar i{{{on_seg}}}}}")
