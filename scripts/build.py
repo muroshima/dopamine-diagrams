@@ -84,7 +84,7 @@ def tier_w(s, fs):
     It is a guess: build.py warns from it, check.mjs measures the real text."""
     def one(c):
         o = ord(c)
-        if o >= 0x1F000 or 0x2600 <= o <= 0x27BF:   # emoji
+        if o >= 0x1F000 or 0x2600 <= o <= 0x27BF or 0x2B00 <= o <= 0x2BFF or 0x2300 <= o <= 0x23FF:   # emoji
             return 1.3
         if 0xFF61 <= o <= 0xFF9F:     # half-width katakana
             return 0.55
@@ -222,37 +222,37 @@ def _arch_svg(spec, u, mode, focal):
             return colw, gaps, need, max(MINW, need)
 
         def solve(with_names):
-            # Fonts follow W and W follows the text: iterate until they settle. Text that grows faster than W
-            # never settles (ok=False), and then the final fonts render under 12px at NARROWEST.
-            FS, FSS, FSE = 16, 14, 14
-            for _ in range(30):
-                colw, gaps, need, W = measure(FS, FSS, FSE, with_names)
-                small = max(14, round(12.3 * W / NARROWEST * 2) / 2)
-                if small == FSS:
-                    break
-                FS, FSS, FSE = small + 2, small, small
-            else:   # not settled: measure the boxes with the fonts actually used
-                colw, gaps, need, W = measure(FS, FSS, FSE, with_names)
-            return FSS * NARROWEST / W >= 12, FS, FSS, FSE, colw, gaps, need, W
+            # Fonts scale with W (the SVG is squeezed to NARROWEST px) and W grows with the fonts. Take the
+            # smallest font, in 0.5 steps up to FMAX, whose text still renders >= 12.3px at NARROWEST.
+            # None fits -> text grows faster than W; the caller warns and check.mjs reports small text.
+            FMAX = 64
+            f = 14.0
+            while f <= FMAX:
+                colw, gaps, need, W = measure(f + 2, f, f, with_names)
+                if round(12.3 * W / NARROWEST * 2) / 2 <= f:
+                    return True, f + 2, f, f, colw, gaps, need, W
+                f += 0.5
+            return (False, 16, 14, 14) + measure(16, 14, 14, with_names)
 
         ok, FS, FSS, FSE, colw, gaps, need, W = solve(True)
         if not ok:
-            # Long tier names: growing the fonts grows the names too and the loop runs away. Size the fonts
-            # from the nodes alone, then let the names widen their columns.
+            # Long tier names: size the fonts from the nodes alone, then let the names widen their columns.
             ok, FS, FSS, FSE, colw, gaps, need, W = solve(False)
             if not ok:
                 print("WARN: architecture has too much text side by side (node labels or edge labels); "
                       "shorten them or use fewer tiers", file=sys.stderr)
+            W0 = W
             for ti, t in enumerate(tiers):
                 colw[ti] = max(colw[ti], tier_w(t["name"], FSS) + 4)
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
             W = max(W, need)
-            if FSS * NARROWEST / W < 12:
+            if ok and W > W0 and FSS * NARROWEST / W < 12:
                 print(f"WARN: architecture tier names are too long for the side-by-side layout "
-                      f"(by estimate, text may drop below 12px at {NARROWEST}px); if check.mjs reports small text, shorten them", file=sys.stderr)
+                      f"(by estimate, text may drop below 12px at {NARROWEST}px); if check.mjs reports small text, "
+                      f"shorten them", file=sys.stderr)
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
-        ty = max(27, math.ceil(0.9 * FSS + 8))   # tier name baseline: cap height stays inside the band (top y=6) as fonts grow
-        top = max(top, ty + 13)
+        ty = max(27, math.ceil(FSS + 8))   # tier name baseline: Japanese ascent is ~1em, keep it under the band top (y=6)
+        top = max(top, ty + math.ceil(0.3 * FSS) + 6)   # room for the descent before the first node
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
