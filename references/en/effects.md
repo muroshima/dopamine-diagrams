@@ -12,6 +12,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.tb.t1`-`.t4` | Importance tier badge: colour, line style (dashed, double, solid with glow, rainbow edge), number of stars and a word change together. Static | Severity, risk, how much a level matters (spec `importance`) | lv1: no glow or rainbow on t3/t4 |
 | `.btn` press | Sinks 3px onto its shadow while pressed (`:active`) | Every button | Same |
 | `.cnt` | A number rolling from `--from` to `--to` (an `@property` integer drawn by a counter; 1.4s, easing out). With motion off only the final value shows; without `@property` it switches to the final value once, halfway. The real number sits in `.sr` for screen readers | compare `metric` | Same |
+| `.gg` | Gauge with a goal line. Switching to after grows or shrinks it from the before length; when it reaches the goal, "Reached ✓" stamps in. Reaching is also said in words and by the border | compare `metric.goal` | The reached mark pops |
 | `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
 | `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" (「完了！」 in Japanese) | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |
 | `pop` keyframes | Fades up 6px | Secondary content appearing | |

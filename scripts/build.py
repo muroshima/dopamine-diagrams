@@ -103,12 +103,13 @@ DEFAULTS = {
     "ja": {"bad_label": "よくある間違い", "good_label": "こうする", "done": "完了！", "decompose_button": "分解する ▶",
            "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
            "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
-           "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要"},
+           "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要",
+           "goal": "目標", "reached": "到達 ✓", "not_reached": "未達"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
            "gem_title": "The one that matters", "before": "Before", "after": "After", "tier1": "Low", "tier2": "Medium", "tier3": "High",
-           "tier4": "Critical"},
+           "tier4": "Critical", "goal": "Goal", "reached": "Reached ✓", "not_reached": "Not yet"},
 }
 
 
@@ -756,6 +757,14 @@ def render_compare(spec, u, lv):
         for k in ("label", "unit"):
             if k in m and not isinstance(m[k], str):
                 fail(f"compare: metric.{k} must be a string")
+        if "goal" in m:
+            g = m["goal"]
+            if isinstance(g, bool) or not isinstance(g, int) or not 0 <= g <= 10**9:
+                fail(f"compare: metric.goal must be a whole number from 0 to 1000000000; got {g!r:.40}")
+        if m.get("better", "lower" if m["after"] < m["before"] else "higher") not in ("lower", "higher"):
+            fail("compare: metric.better must be 'lower' or 'higher'")
+        if "goal" in m and "better" not in m and m["before"] == m["after"]:
+            fail("compare: metric.before equals metric.after, so say which way is better: metric.better 'lower' or 'higher'")
 
     def metric(key):
         if m is None:
@@ -768,7 +777,28 @@ def render_compare(spec, u, lv):
         else:   # counts from the before value to the after value when the after panel appears
             val = (f'<b class="cp-mv gold"><span class="cnt" aria-hidden="true" style="--from:{m["before"]};--to:{v}"></span>'
                    f'<span class="sr">{v}</span>{unit}</b>')
-        return f'<div class="cp-metric"><span class="cp-ml">{E(m.get("label", ""))}</span>{val}</div>'
+        return f'<div class="cp-metric"><span class="cp-ml">{E(m.get("label", ""))}</span>{val}</div>' + gauge(key)
+
+    def gauge(key):
+        """Bar with a goal line, like a rhythm game clear gauge: the label says whether the value reached the goal."""
+        if m is None or "goal" not in m:
+            return ""
+        v, g = m[key], m["goal"]
+        lower = m.get("better", "lower" if m["after"] < m["before"] else "higher") == "lower"
+        ok = v <= g if lower else v >= g
+        top = max(m["before"], m["after"], g) * 1.15 or 1
+        unit = E(m.get("unit", ""))
+        if unit[:1].isascii() and unit[:1].isalpha():
+            unit = " " + unit
+        glabel = f'{T(spec, "goal")} {g}{m.get("unit", "")}'
+        if key == "before" and text_w(glabel, 12) > 90:
+            print(f"WARN: compare: the goal label '{glabel}' is long and may run out of the panel on phones; "
+                  f"shorten metric.unit", file=sys.stderr)
+        st = T(spec, "reached" if ok else "not_reached")
+        return (f'<div class="gg{" gg-ok" if ok else ""}"><div class="gg-bar">'
+                f'<i class="gg-fill" style="--w:{v / top:.4f};--from-w:{m["before"] / top:.4f}"></i>'
+                f'<span class="gg-goal{" gg-l" if g / top < .3 else " gg-r" if g / top > .7 else ""}" style="left:{g / top * 100:.2f}%"><span>{E(T(spec, "goal"))} {g}{unit}</span></span></div>'
+                f'<b class="gg-st">{E(st)}</b></div>')
 
     def panel(side, key, default_tone):
         d = spec[key]
@@ -790,6 +820,8 @@ def render_compare(spec, u, lv):
            f"{s}~.cp-top .cp-t1,{s}~.cp-stage .cp-before{{display:none}}{s}~.cp-top .cp-t2{{display:inline}}"
            f"{s}~.cp-stage .cp-after{{display:block;animation:var(--enter) .55s ease-out both}}"
            f"{s}~.cp-stage .cp-after .cnt{{animation:dd-count 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
+           f"{s}~.cp-stage .cp-after .gg-fill{{animation:dd-fill 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
+           f"{s}~.cp-stage .cp-after .gg-ok .gg-st{{animation:var(--enter) .55s ease-out 1.6s both}}"
            f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")
     return body, css
 

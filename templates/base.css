@@ -76,6 +76,20 @@
 .dd .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @keyframes dd-count{from{--dd-n:var(--from,0)}to{--dd-n:var(--to)}}
 
+/* Gauge with a goal line (rhythm game clear gauge / XP bar): .gg>.gg-bar>(.gg-fill --w:0..1, .gg-goal), .gg-st.
+   Passing is said in words (.gg-st) and with a solid border, never by colour alone. */
+.dd .gg{display:flex;align-items:center;gap:10px;margin:0 0 10px}
+.dd .gg-bar{position:relative;flex:1;height:14px;border-radius:7px;background:var(--line);margin-top:18px;border:1px solid var(--mut)}
+.dd .gg-fill{position:absolute;inset:0 auto 0 0;width:100%;border-radius:7px;background:var(--mut);
+  transform-origin:left;transform:scaleX(var(--w));-webkit-print-color-adjust:exact;print-color-adjust:exact}   /* the fill is the data: print it */
+.dd .gg-ok .gg-fill{background:linear-gradient(90deg,var(--g),#22c55e)}
+.dd .gg-goal{position:absolute;top:-6px;bottom:-6px;width:0;border-left:2px dashed var(--ink)}
+.dd .gg-goal>span{position:absolute;bottom:100%;left:0;transform:translateX(-50%);font-size:12px;font-weight:800;white-space:nowrap;color:var(--ink)}
+.dd .gg-l>span{transform:none}.dd .gg-r>span{transform:translateX(-100%)}   /* near an end: keep the label inside */
+.dd .gg-st{font-size:13px;white-space:nowrap;padding:1px 8px;border-radius:999px;border:1px dashed var(--mut);color:var(--mut)}
+.dd .gg-ok .gg-st{border:2px solid var(--g);color:var(--g)}
+@keyframes dd-fill{from{transform:scaleX(var(--from-w,0))}}
+
 /* Entrances */
 @keyframes stamp{0%{opacity:0;transform:scale(2.2) rotate(-8deg)}55%{opacity:1;transform:scale(.92) rotate(2deg)}100%{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
