@@ -115,6 +115,9 @@ const PROBE = () => {
           if (q.x > tb.x + 1 && q.x < tb.x + tb.width - 1 && q.y > tb.y + 2 && q.y < tb.y + tb.height - 2) return true; }
         return false; });
       if (crossed) clipped.push(`${name} crossed by an edge`);
+      const onLabel = [...svg.querySelectorAll("rect.ar-elabel-bg")].some((lr) => { const l = lr.getBBox();
+        return l.x < tb.x + tb.width && l.x + l.width > tb.x && l.y < tb.y + tb.height && l.y + l.height > tb.y; });
+      if (onLabel) clipped.push(`${name} under an edge label`);
     }
   }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,

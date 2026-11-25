@@ -106,7 +106,7 @@ node scripts/check.mjs out.md --shots .check/out
 node scripts/check.mjs deck.html --pdf deck.pdf
 ```
 
-`build.py` は Python 3 だけで動きます（Windows では `python3` の代わりに `py`）。JSON に必須の項目がない、存在しない箱の id を指している、出力を壊す値が入っている、といった場合は理由を表示して止まります。ボタンなどの既定の文言は、JSON にひらがなかカタカナがあれば日本語、なければ英語になります。`"lang": "ja"` か `"lang": "en"` で指定することもできます。英語のサンプルは [examples/en/](examples/en/) にあります。
+`build.py` は Python 3 だけで動きます（Windows では `python3` の代わりに `py`）。JSON に必須の項目がない、存在しない箱の id を指している、出力を壊す値が入っている、といった場合は理由を表示して止まります。ボタンなどの既定の文言は、JSON にひらがなかカタカナがあれば日本語、なければ英語になります。`"lang": "ja"` か `"lang": "en"` で指定することもできます。漢字だけの日本語（「処理手順」など）は英語と判定されるので、その場合は `"lang": "ja"` を書いてください。英語のサンプルは [examples/en/](examples/en/) にあります。
 
 `check.mjs` には Node 18 以上、`npm run setup`（playwright-core）、Google Chrome の安定版が必要です。Chromium など別の Chrome を使う場合は `CHROME_PATH=/path/to/chrome` を指定してください。そろっていなければ静的な検査だけを行い、その旨を表示します。
 

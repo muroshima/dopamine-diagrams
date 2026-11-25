@@ -80,15 +80,19 @@ def text_w(s, fs):
 
 
 def tier_w(s, fs):
-    """Upper bound for a tier name (.ar-tier is weight 800 with .04em tracking; bold capitals run ~0.8em, W/M ~1.05em)."""
+    """Upper bound for a tier name (.ar-tier is weight 800 with .04em tracking; bold capitals ~0.75em, M/W ~1em).
+    It is a guess: build.py warns from it, check.mjs measures the real text."""
     def one(c):
-        if ord(c) > 0x2E7F:
+        o = ord(c)
+        if o >= 0x1F000:              # emoji
+            return 1.3
+        if o >= 0x2000:               # CJK, and symbols (arrows, boxes, dashes) that Japanese fonts draw full width
             return 1.0
-        if c in "MW@%&":
-            return 1.1
+        if c in "MWmw@%&":
+            return 1.0
         if c.isupper() or c.isdigit():
-            return 0.8
-        return 0.32 if c == " " else 0.62
+            return 0.76
+        return 0.32 if c == " " else 0.6
     return sum((one(c) + .04) * fs for c in str(s))
 
 
@@ -113,7 +117,7 @@ def spec_lang(spec):
             fail(f"lang must be one of {sorted(DEFAULTS)}; got {lang!r:.40}")
         return lang
     # hiragana, katakana (without the middle dot U+30FB, common in non-Japanese text too), half-width katakana
-    return "ja" if re.search(r"[\u3041-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff66-\uff9f]",
+    return "ja" if re.search(r"[\u3041-\u309f\u30a0-\u30fa\u30fc-\u30ff\u31f0-\u31ff\uff66-\uff9f]",
                              json.dumps(spec, ensure_ascii=False)) else "en"
 
 
@@ -204,8 +208,7 @@ def _arch_svg(spec, u, mode, focal):
         W, top, gap, MINW, NARROWEST = 600, 40, 18, 600, 529
         FS, FSS, FSE = 16, 14, 14
         for _ in range(4):
-            colw = [max([tier_w(t["name"], FSS) + 4] + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20)
-                                                       for n in t["nodes"]]) for t in tiers]
+            colw = [max(max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]) for t in tiers]
             gaps = []
             for ti in range(T - 1):
                 labs = [text_w(e["label"], FSE) + 18 for e in edges
@@ -217,7 +220,20 @@ def _arch_svg(spec, u, mode, focal):
             if small == FSS:
                 break
             FS, FSS, FSE = small + 2, small, small
+        # Tier names widen their column without feeding back into the font size (that loop never settles
+        # for long names). If that makes the SVG wider than the fonts were sized for, say so; check.mjs then
+        # reports text under 12px at the narrowest width.
+        for ti, t in enumerate(tiers):
+            colw[ti] = max(colw[ti], tier_w(t["name"], FSS) + 4)
+        need2 = 12 + sum(c + 16 for c in colw) + sum(gaps)
+        if need2 > W + 0.5:
+            print(f"WARN: architecture tier names are too long for the side-by-side layout (needs ~{need2:.0f} of {W:.0f} units); "
+                  f"shorten them", file=sys.stderr)
+            W = need2
+        need = max(need, need2)
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
+        ty = max(27, math.ceil(0.9 * FSS + 8))   # tier name baseline: cap height stays inside the band (top y=6) as fonts grow
+        top = max(top, ty + 13)
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
@@ -226,7 +242,7 @@ def _arch_svg(spec, u, mode, focal):
             bw = colw[ti] + 16
             cx = x + bw / 2
             out.append(f'<rect class="ar-band" x="{x:.1f}" y="6" width="{bw:.1f}" height="{H-8:.1f}" rx="10"/>'
-                       f'<text class="ar-tier" x="{cx:.1f}" y="27">{E(t["name"])}</text>')
+                       f'<text class="ar-tier" x="{cx:.1f}" y="{ty}">{E(t["name"])}</text>')
             k = len(t["nodes"])
             y0 = top + (maxn - k) * (nh + gap) / 2
             for ni, n in enumerate(t["nodes"]):
@@ -263,7 +279,7 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     # edges first (under nodes)
-    eds, curves = [], []
+    eds, curves, lrects = [], [], []
     for e in edges:
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
@@ -298,6 +314,7 @@ def _arch_svg(spec, u, mode, focal):
                     lo_t, hi_t = (mid, hi_t) if _bez(p0, p1, p2, p3, mid)[1] < target else (lo_t, mid)
                 mx, my = _bez(p0, p1, p2, p3, lo_t)
             lw = text_w(e["label"], FSE) + 10
+            lrects.append((mx - lw / 2, mx + lw / 2, my - FSE / 2 - 4, my + FSE / 2 + 4))
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
@@ -309,16 +326,19 @@ def _arch_svg(spec, u, mode, focal):
             nw = tier_w(name, FSS)
             if nw > W - 24:
                 print(f"WARN: architecture tier name '{name}' is too long for the phone layout "
-                      f"(~{nw:.0f}px, room for {W - 24}px); shorten it", file=sys.stderr)
+                      f"(~{nw:.1f} of {W - 24} units); shorten it", file=sys.stderr)
                 out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
                 continue
             xs = [x for p0, p1, p2, p3 in curves for t in [i / 80 for i in range(81)]
                   for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
+            spans = [(x0l, x1l) for x0l, x1l, y0l, y1l in lrects if y0l < by + 22 and y1l > by]
             cands = [12 + 4 * k for k in range(int((W - 24 - nw) // 4) + 1)] + [W - 12 - nw]
-            free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)]
+            free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)
+                    and not any(a < x0 + nw + 4 and b > x0 - 4 for a, b in spans)]
             if not free:
-                print(f"WARN: architecture tier '{name}': edges cross its name on the phone layout wherever it goes; "
-                      f"shorten the name or route fewer edges into this tier", file=sys.stderr)
+                print(f"WARN: architecture tier '{name}': edges or edge labels may cross its name on the phone layout "
+                      f"(estimated width); if check.mjs reports this tier, shorten the name or route fewer edges into it",
+                      file=sys.stderr)
             x0 = free[0] if free else 12
             if x0 == cands[-1] and x0 > 12:   # right corner: anchor at the end so a wider-than-estimated name grows left
                 out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')

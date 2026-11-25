@@ -116,7 +116,8 @@ node scripts/check.mjs deck.html --pdf deck.pdf
 `build.py` needs only Python 3 (`py` instead of `python3` on Windows). It stops with a message when a spec is
 missing a field, points at an unknown node id, or contains a value that would break the output. Default UI
 words (button labels and so on) are Japanese when the spec has hiragana or katakana and English otherwise;
-set `"lang": "en"` or `"lang": "ja"` to choose.
+set `"lang": "en"` or `"lang": "ja"` to choose. Japanese written only in kanji counts as English, so add
+`"lang": "ja"` there.
 
 `check.mjs` needs Node 18+, `npm run setup` (playwright-core) and Google Chrome stable; set
 `CHROME_PATH=/path/to/chrome` for Chromium or another build. Without them it runs the static checks only and
