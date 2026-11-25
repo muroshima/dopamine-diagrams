@@ -216,33 +216,36 @@ def _arch_svg(spec, u, mode, focal):
                         + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]])
                     for t in tiers]
             gaps = []
+            def bulge_need(t):
+                # room beside a column for its same-tier bulges (same nesting rule as the routing, plus slack)
+                grp = sorted((e for e in edges if tid[e["from"]] == tid[e["to"]] == t
+                              and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)),
+                             key=lambda e: abs(nord[e["from"]] - nord[e["to"]]))
+                done, need_ = [], 0
+                for e in grp:
+                    lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
+                    lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+                    off = max(14, lw_i / 2 + 10)
+                    for (lo2, hi2, off2, lw2) in done:
+                        if lo < hi2 and lo2 < hi:
+                            off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
+                    done.append((lo, hi, off, lw_i))
+                    need_ = max(need_, off + lw_i / 2 + 6)
+                return need_ * 1.3 if need_ else 0   # slack: the real offsets follow the curve (see boff)
+
             for ti in range(T - 1):
                 # labels of edges between neighbouring tiers, and of edges that skip tiers (on their first hop)
                 labs = [text_w(e["label"], FSE) + 18 for e in edges if e.get("label")
                         and (sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]
                              or (tid[e["from"]] == ti and tid[e["to"]] > ti + 1))]
                 # same-tier edges bulge into the gap on their right (the last tier: on its left); both sides add up
-                def bulge_need(t):
-                    # same nesting rule as the routing below: each bulge clears the labels of the bulges inside it
-                    grp = sorted((e for e in edges if tid[e["from"]] == tid[e["to"]] == t
-                                  and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)),
-                                 key=lambda e: abs(nord[e["from"]] - nord[e["to"]]))
-                    done, need_ = [], 0
-                    for e in grp:
-                        lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
-                        lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
-                        off = max(14, lw_i / 2 + 10)
-                        for (lo2, hi2, off2, lw2) in done:
-                            if lo < hi2 and lo2 < hi:
-                                off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
-                        done.append((lo, hi, off, lw_i))
-                        need_ = max(need_, off + lw_i / 2 + 6)
-                    return need_
                 side_need = bulge_need(ti) if ti < T - 1 else 0
                 if ti == T - 2:
                     side_need += bulge_need(T - 1)
                 gaps.append(max([34, side_need + 10] + labs))
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
+            if T == 1:   # the single column is centred: room for its bulges on both sides
+                need += 2 * bulge_need(0)
             return colw, gaps, need, max(MINW, need)
 
         def solve(with_names):
@@ -380,25 +383,51 @@ def _arch_svg(spec, u, mode, focal):
     # Wide: apex offset per bulge, shortest span first. A bulge sits outside every earlier bulge whose span overlaps
     # its own, past that bulge's label, so nested lines and labels never cross; disjoint ones stay close to the column.
     boff = {}
+
+    def bulge_x_at(y, ya, yb, off):
+        """x (from the node edge) of a wide bulge from ya to yb with apex offset off, where it crosses height y."""
+        p0, p3, c = (0, ya), (0, yb), (off + 8) * 4 / 3   # the band edge is 8 past the node edge
+        lo_t, hi_t = 0.0, 0.5
+        up = (yb > ya)
+        if not min(ya, yb) <= y <= max(ya, yb):
+            return 0
+        for _ in range(30):   # y is monotonic on each half; search the half that holds y
+            mid = (lo_t + hi_t) / 2
+            yy = _bez(p0, (c, ya), (c, yb), p3, mid)[1]
+            lo_t, hi_t = (mid, hi_t) if (yy < y) == up else (lo_t, mid)
+        t1 = lo_t
+        x1 = _bez(p0, (c, ya), (c, yb), p3, t1)[0]
+        lo_t, hi_t = 0.5, 1.0
+        for _ in range(30):
+            mid = (lo_t + hi_t) / 2
+            yy = _bez(p0, (c, ya), (c, yb), p3, mid)[1]
+            lo_t, hi_t = (mid, hi_t) if (yy < y) == up else (lo_t, mid)
+        x2 = _bez(p0, (c, ya), (c, yb), p3, lo_t)[0]
+        return min(x1, x2)
+
     for t_i in range(T):
-        done = []
+        done = []   # (lo, hi, label rect relative to the node edge)
         for i in sorted((i for i in brank if tid[edges[i]["from"]] == t_i), key=lambda i: brank[i]):
             e = edges[i]
+            a_, b_ = pos[e["from"]], pos[e["to"]]
             lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
             lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+            dy = min(a_[3] / 2 - 4, a_[3] * (.22 + .1 * brank[i])) * (1 if b_[1] > a_[1] else -1)
+            ya, yb = a_[1] + dy, b_[1] - dy
             off = max(14, lw_i / 2 + 10)
-            for (lo2, hi2, off2, lw2) in done:
-                if lo < hi2 and lo2 < hi:   # spans overlap
-                    off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
+            for _ in range(80):   # push out until this curve passes outside every inner label it spans
+                if all(bulge_x_at(min(max(ly, min(ya, yb)), max(ya, yb)), ya, yb, off) >= lx1 + 6
+                       for (lo2, hi2, (lx1, ly)) in done if lo <= lo2 and hi2 <= hi):
+                    break
+                off += 4
             boff[i] = off
-            done.append((lo, hi, off, lw_i))
+            if lw_i:
+                done.append((lo, hi, (off + 8 + lw_i / 2, (a_[1] + b_[1]) / 2)))
 
     def self_check(routes, pts_of):
         """Measure the finished drawing and warn about what a reader would misread. The router is a heuristic; this
         check is the guarantee: a line under a node it does not connect, two lines between different nodes running
         together, or a label lying on another line always produces a WARN."""
-        ends = [(pos[e["from"]], pos[e["to"]]) for e, _, _, _ in routes]
-        seen = set()
         for ri, (e, a, b, segs) in enumerate(routes):
             for nid, (cx, cy, w, h, _) in pos.items():
                 if nid in (e["from"], e["to"]):
@@ -407,16 +436,39 @@ def _arch_svg(spec, u, mode, focal):
                     print(f"WARN: architecture edge {e['from']}->{e['to']} runs under node '{nid}' in the {mode} layout; "
                           f"connect neighbouring tiers or put fewer nodes in between", file=sys.stderr)
                     break
+        dense = [[_bez(*sg, k / 60) for sg in r[3] for k in range(61)] for r in routes]
+
+        def seg_dist(px, py, ax, ay, bx, by):
+            dx, dy = bx - ax, by - ay
+            L = dx * dx + dy * dy
+            t = 0 if L == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / L))
+            return math.hypot(px - ax - t * dx, py - ay - t * dy)
         for ri in range(len(routes)):
             for rj in range(ri + 1, len(routes)):
                 ei, ej = routes[ri][0], routes[rj][0]
-                # near their nodes lines may meet (a fan-out from one node); count only the stretch away from them
-                tips = [(q[0], q[1], q[2], q[3]) for pair in (ends[ri], ends[rj]) for q in pair]
-                close = sum(1 for x, y in pts_of[ri]
-                            if min(abs(x - u) + abs(y - v) for u, v in pts_of[rj]) < 4
-                            and all(abs(x - tx) > tw / 2 + 18 or abs(y - ty_) > th / 2 + 18 for tx, ty_, tw, th in tips))
-                if close > 6 and (ri, rj) not in seen:
-                    seen.add((ri, rj))
+                A, B = dense[ri], dense[rj]
+                bx0, by0 = min(q[0] for q in B) - 6, min(q[1] for q in B) - 6
+                bx1, by1 = max(q[0] for q in B) + 6, max(q[1] for q in B) + 6
+                near = [bx0 < x < bx1 and by0 < y < by1 and
+                        min(seg_dist(x, y, *B[k], *B[k + 1]) for k in range(len(B) - 1)) < 5 for x, y in A]
+                # stretches where the two lines are within a stroke of each other; one that starts or ends at a node
+                # both lines share is a fan-out (a line splitting towards two nodes) and reads correctly
+                shared_start = ei["from"] in (ej["from"], ej["to"])
+                shared_end = ei["to"] in (ej["from"], ej["to"])
+                run, longest, start = 0, 0, None
+                for k, flag in enumerate(near + [False]):
+                    if flag:
+                        if run == 0:
+                            start = k
+                        run += 1
+                        continue
+                    if run:
+                        touches = (start == 0 and shared_start) or (k == len(near) and shared_end)
+                        if not touches:
+                            seg_len = sum(math.dist(A[m], A[m + 1]) for m in range(start, min(k, len(A) - 1)))
+                            longest = max(longest, seg_len)
+                    run = 0
+                if longest > 24:
                     print(f"WARN: architecture edges {ei['from']}->{ei['to']} and {ej['from']}->{ej['to']} run together "
                           f"in the {mode} layout and may read as connected; reorder nodes or drop an edge", file=sys.stderr)
         for ri, (e, a, b, segs) in enumerate(routes):
@@ -477,9 +529,10 @@ def _arch_svg(spec, u, mode, focal):
                 # Always the gap below the row: the row below never uses it for its own bulges, so they cannot meet.
                 level = brank[ei]
                 depth = 8 + 7 * level
-                if depth > rowgap - 8 if a[4] < T - 1 else level >= 3:
+                if (depth > rowgap - 8) if a[4] < T - 1 else level >= 2:
                     print(f"WARN: architecture tier '{tiers[a[4]]['name']}' has too many same-tier edges for the phone "
-                          f"layout; they will overlap the next row. Connect fewer nodes inside the tier", file=sys.stderr)
+                          f"layout; they bunch up and are hard to tell apart. Connect fewer nodes inside the tier",
+                          file=sys.stderr)
                 side = 1
                 g = band_top[a[4]] + bh + depth
                 if a[4] == T - 1:
