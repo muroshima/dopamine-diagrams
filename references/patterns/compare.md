@@ -1,34 +1,32 @@
-# Pattern: compare
+# パターン: compare
 
-A "before" panel (red badge, items with red edges, a complaint) flips to an "after" panel inside a rainbow
-border (green badge, green items, a gold headline) when the reader clicks the button.
+「ビフォー」のパネル（赤いバッジ、赤い縁の項目、困りごと）が、ボタンを押すと虹色の枠に入った「アフター」のパネル（緑のバッジ、緑の項目、金色の見出し）に切り替わります。
 
-Use it for "the habit vs. the better way": copied approval flows, manual vs. automated steps, old vs. new
-architecture in words. For two *diagrams* side by side, use two specs instead.
+「いつものやり方とよりよいやり方」に使います。前例をなぞった承認フロー、手作業と自動化、旧構成と新構成の言葉での説明などです。2つの*図*を並べたいときは、spec を2つ使ってください。
 
 ## Spec
 
 ```json
 {
   "pattern": "compare",
-  "title": "Does every request need sign-off?",
-  "button": "Question the habit ▶",
-  "back": "Back",
-  "before": {"label": "Before", "title": "Everything waits for the manager",
-             "items": ["Routine renewal", "Small office purchase"], "message": "Why it hurts"},
-  "after":  {"label": "After", "title": "Route by risk",
-             "items": [{"text": "Routine renewal → automatic", "tone": "good"},
-                       {"text": "New vendor → manager", "tone": "neutral"}],
-             "headline": "Half the queue gone", "message": "What changed"}
+  "title": "その申請、全部に承認が要る？",
+  "button": "慣習を疑う ▶",
+  "back": "戻る",
+  "before": {"label": "ビフォー", "title": "全部が課長待ち",
+             "items": ["定例の更新", "少額の備品購入"], "message": "何がつらいか"},
+  "after":  {"label": "アフター", "title": "リスクで振り分ける",
+             "items": [{"text": "定例の更新 → 自動承認", "tone": "good"},
+                       {"text": "新規の取引先 → 課長", "tone": "neutral"}],
+             "headline": "待ち行列が半分に", "message": "何が変わったか"}
 }
 ```
 
-| Field | Notes |
+| フィールド | 補足 |
 |---|---|
-| `before`, `after` | `label` (badge), `title`, `items`, `message`; `after.headline` is shown in gold |
-| `items[]` | A string, or `{"text", "tone"}` with tone `bad`, `good` or `neutral`. Defaults: before `bad`, after `good` |
+| `before`, `after` | `label`（バッジ）、`title`、`items`、`message`。`after.headline` は金色で表示 |
+| `items[]` | 文字列か、`{"text", "tone"}`。tone は `bad`、`good`、`neutral`。既定は before が `bad`、after が `good` |
 
-## Limits
+## 上限
 
-- 2–6 items per side; keep each under ~30 characters so two fit per row on phones.
-- Print/PDF shows both panels stacked, without the button.
+- 各側の項目は2〜6個。スマホで1行に2つ並ぶよう、1項目はおよそ30文字未満にします。
+- 印刷と PDF では、ボタンなしで両方のパネルを縦に並べて表示します。

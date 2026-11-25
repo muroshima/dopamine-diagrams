@@ -1,61 +1,102 @@
 # dopamine-diagrams
 
-**English** | [日本語](README.ja.md)
+**日本語** | [English](README.en.md)
 
-An agent skill (Claude Code and other `SKILL.md`-compatible agents) for explainer diagrams that people stop
-scrolling for: flowing rainbow titles, gold text, a rainbow border running around the one box that matters,
-neon pulses, and answers that stamp in when you click.
+ドパガキ向けの図を作るエージェントスキルです。Claude Code など、`SKILL.md` に対応したエージェントで使えます。
 
-Pure HTML + CSS. One JSON spec builds to:
+<img src="docs/architecture.png" alt="アーキテクチャ図。層ごとに箱が並び、API の箱に虹色の枠。マウスを乗せた API につながる線だけが光り、ほかの箱は薄くなっている">
 
-- a **Zenn `html-embed`** block (JavaScript is banned there; everything here works without it),
-- a **standalone HTML** page,
-- a **16:9 slide deck** that prints to PDF.
+見出しには虹色のグラデーションが流れ、大事な言葉は金文字で光ります。いちばん見てほしい箱の周りを虹色の光が回り、クリックすると答えがハンコのようにドンと出ます。
 
-A render checker opens every output in Chrome, clicks every state at every width, and fails on overflow,
-text under 12px, the 500px Zenn height limit, and animation loops fast enough to count as flashing.
+HTML と CSS だけでできていて、1つの JSON から3通りに出力できます。
+
+- **Zenn の `html-embed`** ブロック（JavaScript が使えない環境でもそのまま動きます）
+- **単体の HTML** ページ
+- **16:9 のスライド**（PDF に印刷できます）
+
+## 図の種類
+
+8種類あります。画像はどれも [examples/](examples/) のサンプルを Zenn の本文幅（706px）で撮ったものです。
+
+### architecture: 層ごとのコンポーネントと、リクエストの流れ
+
+接続線に光が流れます。箱にマウスを乗せると、つながる線だけが光ります（一番上の画像）。
+
+### explorer: 「X のときは Y する（Z ではない）」を状況ごとに
+
+状況を選ぶと、よくある間違いに取り消し線が引かれ、答えが虹色の枠の中にスタンプで出ます。
+
+<img src="docs/explorer.png" alt="explorer。左に HTTP エラーの一覧、選んだ 409 Conflict の右に、取り消し線付きのよくある間違いと、虹色の枠の答え">
+
+### decompose: ふわっとした一文を、具体的な項目に分解する
+
+クリックで分解します。項目が順に現れ、最後に金色のスタンプが押されます。
+
+<img src="docs/decompose.png" alt="decompose。「システムを安全にする」が5つの具体的な要件に分かれ、右上に金色の「テストできる！」のスタンプ">
+
+### compare: いつものやり方と、よりよいやり方
+
+クリックでビフォーがアフターに切り替わります。
+
+<img src="docs/compare.png" alt="compare のアフター側。虹色の枠の中に、承認をリスクで振り分けた4項目と、金文字の「承認待ちが半分に」">
+
+### loop: 繰り返す循環と、目的まで戻るタイミング
+
+円に沿って光が回ります。点線の矢印は、目的が変わったら最初に戻る道です。
+
+<img src="docs/loop.png" alt="loop。目的の箱から、引き出す、書く、作る、運用する、振り返るの5つが円になり、中央に金文字の「もう一周」">
+
+### flow: 一直線の手順
+
+線に沿って光が流れます。手順を選ぶと説明が出ます。
+
+<img src="docs/flow.png" alt="flow。ブランチ、PR、CI、レビュー、リリースの5つの手順が線でつながり、選んだ CI の説明が下に出ている">
+
+### ladder: 段階・成熟度・段階的な計画
+
+自分の段を選ぶと、次の一手が金文字で出ます。
+
+<img src="docs/ladder.png" alt="ladder。属人から自己修復まで5段の棒。選んだ Lv.2 手順書の下に、金文字の次の一手">
+
+### proportion: 平均に埋もれる、まれだけど大事な1件
+
+クリックで99個の点が薄れ、大事な1個が光ります。
+
+<img src="docs/proportion.png" alt="proportion。100個の点のうち99個が薄れ、1個だけが金色に光る。右に金文字の「見落としてはいけない1件」">
+
+## スマホとスライド
+
+画面が狭いと、レイアウトが縦に組み替わります。Zenn の埋め込みは幅560px で切り替えます（理由は下の「Zenn で使うときの注意」）。
 
 <p>
-<img src="docs/architecture.png" width="49%" alt="Architecture diagram: tiers of boxes with light flowing along the edges; the API box has a rainbow border">
-<img src="docs/explorer-dark.png" width="49%" alt="Explorer in dark mode: a list of HTTP errors on the left, the selected one shows a struck-through mistake and the answer in a rainbow box">
+<img src="docs/phone-architecture.png" width="49%" alt="アーキテクチャ図のスマホ表示。層が上から下に並ぶ">
+<img src="docs/phone-explorer.png" width="49%" alt="explorer のスマホ表示。状況の一覧が上にチップで並び、答えが下に出る">
 </p>
+
+スライドは1枚1280×720px で、そのまま PDF に印刷できます。
+
+<img src="docs/slides.png" alt="スライド。見出しの下に explorer の図が大きく表示されている">
+
+## 派手さの強さ
+
+`--intensity` で3段階から選べます。左から `1`（控えめ。社内資料や堅めの場向け）、`2`（標準）、`3`（全開）です。
+
 <p>
-<img src="docs/decompose.png" width="66%" alt="Decompose: 'Make the system secure' broken into five concrete requirements with a gold 'Testable!' stamp">
-<img src="docs/architecture-phone-dark.png" width="32%" alt="The same architecture diagram laid out vertically for phones">
+<img src="docs/intensity-1.png" width="32%" alt="強さ1。見出しは単色、枠はオレンジ1色">
+<img src="docs/compare.png" width="32%" alt="強さ2。虹色の見出しと虹色の枠">
+<img src="docs/intensity-3.png" width="32%" alt="強さ3。枠の回転と光が強い">
 </p>
 
-## Why
-
-The diagrams were first made for a Japanese article written *for "dopa-gaki"* — slang for readers hooked on
-quick dopamine hits who will not read a paragraph. The loud look worked, but only because the loudness was
-spent on one or two focal points. This skill keeps that rule: **one focal point, everything else calm**.
-
-## Patterns
-
-| Pattern | Shows | Interaction |
-|---|---|---|
-| `architecture` | Components in tiers, how a request flows | Light flows along edges; hover a box to light its connections |
-| `explorer` | "In situation X, do Y (not Z)" | Pick a situation; the answer stamps in |
-| `decompose` | A vague statement becoming concrete items | Click to break it down; pieces stamp in, a gold stamp lands |
-| `compare` | The habit vs. the better way | Click to flip before into after |
-| `loop` | A repeating cycle, and when to restart from the goal | Light runs round the ring |
-| `flow` | Linear steps | Light runs along the line; pick a step |
-| `ladder` | Levels, maturity, staged plans | Pick your level; the next move appears in gold |
-| `proportion` | The rare case the average hides | One click fades 99 dots and lights up the one that matters |
-
-Intensity: `1` calm (for conservative docs), `2` standard, `3` full.
-
-## Install
+## 導入
 
 ```sh
 git clone https://github.com/muroshima/dopamine-diagrams ~/.claude/skills/dopamine-diagrams
-cd ~/.claude/skills/dopamine-diagrams && npm run setup   # optional: render checks (uses your installed Chrome)
+cd ~/.claude/skills/dopamine-diagrams && npm run setup   # 任意。検査用（インストール済みの Chrome を使います）
 ```
 
-Then ask your agent for a diagram, e.g. *"Make a dopamine-diagrams explorer for our on-call escalation rules,
-for Zenn."* The agent follows `SKILL.md`: pick target and pattern, write a JSON spec, build, check, look.
+あとはエージェントに頼むだけです。例えば「オンコールのエスカレーションルールを、dopamine-diagrams の explorer で Zenn 用に作って」と頼むと、エージェントが `SKILL.md` の手順に沿って作ります。出力先と図の種類を決め、JSON を書き、組み立て、検査して、見た目を確認する流れです。
 
-## Use the scripts directly
+## スクリプトを直接使う
 
 ```sh
 python3 scripts/build.py examples/explorer.json --target zenn -o out.md
@@ -65,31 +106,23 @@ node scripts/check.mjs out.md --shots .check/out
 node scripts/check.mjs deck.html --pdf deck.pdf
 ```
 
-`build.py` needs only Python 3 (on Windows run `py` instead of `python3`). It stops with a message when a spec is
-missing a field, uses an unknown node id, or has a value that would break the output.
+`build.py` は Python 3 だけで動きます（Windows では `python3` の代わりに `py`）。JSON に必須の項目がない、存在しない箱の id を指している、出力を壊す値が入っている、といった場合は理由を表示して止まります。ボタンなどの既定の文言は、JSON に日本語が入っていれば日本語、なければ英語になります。英語のサンプルは [examples/en/](examples/en/) にあります。
 
-`check.mjs` needs Node 18+, `npm run setup` (playwright-core) and the stable Google Chrome. For Chromium or another
-Chrome build, set `CHROME_PATH=/path/to/chrome`. Without them it runs static checks only and says so.
-`--shots DIR` saves screenshots: for Zenn, one per state at 700px and 340px in light and dark; for standalone and
-slides, one full page per width and theme after the last click.
+`check.mjs` には Node 18 以上、`npm run setup`（playwright-core）、Google Chrome の安定版が必要です。Chromium など別の Chrome を使う場合は `CHROME_PATH=/path/to/chrome` を指定してください。そろっていなければ静的な検査だけを行い、その旨を表示します。
 
-## Rules the effects follow
+検査では出力を Chrome で開き、幅ごとに全部のボタンを押して確かめます。横のはみ出し、12px 未満の文字、Zenn の高さ上限500px、点滅とみなされる速さのアニメーションが見つかると FAIL です。`--shots DIR` を付けるとスクリーンショットも保存します。
 
-- No flashing: no loop under 0.5s, glow eases over ≥ 1s (Zenn bans flashing embeds; WCAG 2.3.1).
-- `prefers-reduced-motion` and print turn all motion off, and every element is readable without it.
-- Rendered text ≥ 12px, including scaled SVG text. Colour is never the only signal.
+## 演出のルール
 
-## Layout
+- 光らせるのは1つの図に1〜2か所だけです。全部を光らせると、ただのノイズになります。
+- 点滅させません。0.5秒より速いループは使わず、光の強弱は1秒以上かけて変えます（Zenn は点滅する埋め込みを禁止しています。WCAG 2.3.1 の基準もあります）。
+- 動きを減らす設定の閲覧者と印刷では、動きをすべて止めます。止めた状態でもすべて読めます。
+- 表示される文字は12px 以上にします（縮小された SVG の文字も含みます）。色だけで区別しません。
 
-```
-SKILL.md              workflow, emphasis budget, hard rules
-references/           targets (zenn, slides, standalone), patterns, effects, interactions, pitfalls, citation
-templates/            base.css (tokens + effects) and one CSS file per pattern
-scripts/build.py      JSON spec -> zenn / standalone / slides
-scripts/check.mjs     rendered checks
-examples/             specs and built outputs
-```
+## Zenn で使うときの注意
 
-## License
+Zenn 公式は切り替えの境目を640px と案内しています。ただ、公開中の記事で実測すると、埋め込みの幅は画面幅1440px と1280px で706px、1100px で591px、1024px で515px でした。この範囲ではサイドバーが出て、本文の列が狭くなるためです。640px のままだと、よくある PC の画面幅でもスマホ用のレイアウトが出てしまうので、このスキルは境目を560px にしています。詳しくは [references/targets/zenn.md](references/targets/zenn.md) を見てください。
+
+## ライセンス
 
 MIT

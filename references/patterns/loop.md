@@ -1,33 +1,30 @@
-# Pattern: loop
+# パターン: loop
 
-Steps on a ring with dashes of light running round it; each step lights up in turn. Optionally a goal box
-sits above the ring with an arrow into the first step, and a red dashed line from the last step back up to
-the goal ("if the goal itself changes, go back to the top").
+ステップが円の上に並び、光の破線が円を回ります。各ステップは順番に光ります。任意で、円の上に目的の箱を置けます。目的の箱から最初のステップへ矢印が入り、最後のステップから目的へ赤い破線で戻ります（「目的そのものが変わったら最初に戻る」）。
 
-Use it for cycles: build–measure–learn, incident review, requirement updates after launch.
+循環に使います。作る・測る・学ぶ、障害の振り返り、リリース後の要件の更新などです。
 
 ## Spec
 
 ```json
 {
   "pattern": "loop",
-  "title": "Requirements keep moving after launch",
-  "goal": "Goal",
-  "steps": ["Elicit", "Specify", "Build", "Operate", "Feedback"],
-  "center": {"text": "Again", "sub": "change is the default"},
-  "back_label": "Goal changed? Go back to the top"
+  "title": "要件はリリース後も動き続ける",
+  "goal": "目的",
+  "steps": ["引き出す", "仕様にする", "作る", "運用する", "声を集める"],
+  "center": {"text": "もう一周", "sub": "変わるのが当たり前"},
+  "back_label": "目的が変わった？ 最初に戻る"
 }
 ```
 
-| Field | Notes |
+| フィールド | 補足 |
 |---|---|
-| `steps` | 3–6 short labels (≤ 12 ASCII / 7 CJK characters; build.py warns above that and stops outside 3–6) |
-| `goal` | Optional. Without it the ring moves up and the diagram is shorter |
-| `back_label` | Optional; needs `goal`. Draws the red return line and its legend |
-| `center` | Optional gold word and a grey line in the middle of the ring |
+| `steps` | 短いラベルを3〜6個（ASCII 12文字、CJK 7文字まで。超えると build.py が警告し、3〜6個の範囲外だと止まる） |
+| `goal` | 任意。ないと円が上に詰まり、図が低くなる |
+| `back_label` | 任意。`goal` が必要。赤い戻り線と凡例を描く |
+| `center` | 任意。円の中央に金色の言葉と灰色の1行を置く |
 
-## Limits
+## 上限
 
-- The SVG is 400 units wide and capped at 360px so it fits Zenn's 500px height with a goal and legend.
-  Fonts are 16 units, which keeps them ≥ 12px at 340px.
-- Gradient-filled text prints as a box in Chrome PDFs; print switches it to solid orange.
+- SVG は幅400ユニットで、表示は最大360px です。目的と凡例があっても Zenn の高さ500px に収まります。文字は16ユニットで、340px でも12px 以上を保ちます。
+- グラデーション塗りの文字は、Chrome の PDF では箱になって印刷されます。印刷時は単色のオレンジに切り替えます。

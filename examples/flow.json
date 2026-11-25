@@ -1,12 +1,27 @@
 {
   "pattern": "flow",
-  "title": "How a change reaches production",
+  "title": "変更が本番に届くまで",
   "steps": [
-    {"label": "Branch", "detail": "Work on a feature branch; main stays deployable"},
-    {"label": "PR", "detail": "Open a pull request with the why, not the history"},
-    {"label": "CI", "detail": "Tests, lint and a preview deploy run on every push"},
-    {"label": "Review", "detail": "Someone else reads it; comments are answered before merge"},
-    {"label": "Ship", "detail": "Merge deploys automatically; watch the dashboard for 15 minutes"}
+    {
+      "label": "ブランチ",
+      "detail": "作業は feature ブランチで。main はいつでもデプロイできる状態に保つ"
+    },
+    {
+      "label": "PR",
+      "detail": "経緯ではなく、なぜ変えるのかを書いて PR を出す"
+    },
+    {
+      "label": "CI",
+      "detail": "push のたびにテスト、lint、プレビュー環境へのデプロイが走る"
+    },
+    {
+      "label": "レビュー",
+      "detail": "別の人が読み、コメントにはマージ前に答える"
+    },
+    {
+      "label": "リリース",
+      "detail": "マージで自動デプロイ。15分はダッシュボードを見ておく"
+    }
   ],
-  "note": "Example content for the flow pattern"
+  "note": "flow のサンプルです"
 }

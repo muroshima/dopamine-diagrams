@@ -1,33 +1,25 @@
-# Effects
+# エフェクト
 
-All effects live in `templates/base.css` as classes. Use them only on focal elements (see the emphasis budget
-in SKILL.md). Intensity level 1 turns most of them into static accents.
+エフェクトはすべて `templates/base.css` のクラスです。使うのは焦点の要素だけにします（SKILL.md の強調の予算を参照）。強さレベル1では、ほとんどが動かないアクセントに変わります。
 
-| Class | Looks like | Use on | Notes |
+| クラス | 見た目 | 使う場所 | 補足 |
 |---|---|---|---|
-| `.ttl` | Title in a rainbow gradient that slowly flows (5s loop) | Diagram title | lv1: plain bold |
-| `.gold` | Gold gradient text with a dark outline; its glow breathes (1.8s) | 1–2 focal words: the answer label, a stamp | Needs ≥ 16px to read; outline keeps contrast on light backgrounds |
-| `.rb` + inner `.in` | Rainbow light running around a box (1.8s per turn; lv3 1.2s) | The one box the reader should end on | 6px band. Never two side by side |
-| `.neon` / `.chip-on` | Box shadow that brightens and fades (1.6s) | Selected chip, the active gate | lv1: static outline |
-| `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
-| `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |
-| `pop` keyframes | Fades up 6px | Secondary content appearing | |
-| `.btn` | Orange pill button with a 3D edge and glow | The `<label>` that toggles a state | |
+| `.ttl` | 虹色のグラデーションがゆっくり流れるタイトル（5秒周期） | 図のタイトル | lv1: ただの太字 |
+| `.gold` | 暗い縁取り付きの金色グラデーション文字。光が呼吸するように強弱する（1.8秒） | 焦点の言葉1〜2個。答えのラベルやスタンプ | 読めるのは16px以上。縁取りがあるので明るい背景でもコントラストが保てる |
+| `.rb` + 内側の `.in` | 箱の周りを虹色の光が回る（1周1.8秒。lv3は1.2秒） | 読者が最後に見るべき1つの箱 | 帯の幅は6px。2つ並べない |
+| `.neon` / `.chip-on` | 影が明るくなったり薄れたりする（1.6秒） | 選択中のチップ、いま有効なゲート | lv1: 動かない枠線 |
+| `.shine` | 3秒ごとに光の帯がボタンを横切る | 主ボタン、警告の帯 | |
+| `stamp` キーフレーム | 2.2倍から少し回転しながら落ちてくる | 答えが出る瞬間、「完了！」（英語は "Done!"） | `animation: var(--enter) …` 経由で使う。lv1 では `pop` に差し替わる |
+| `pop` キーフレーム | 6px 浮き上がりながらフェードイン | 補助的な内容の表示 | |
+| `.btn` | 立体的な縁と光のあるオレンジのピル型ボタン | 状態を切り替える `<label>` | |
 
-## Safety limits (do not relax)
+## 安全のための上限（緩めない）
 
-- **Loop period ≥ 1s for anything that changes brightness**, never a hard on/off. A rotating gradient border
-  changes colour at a given pixel once per turn; keep a turn ≥ 1s. The checker fails any infinite loop
-  under 0.5s. (Zenn: "激しく点滅する表示" is banned. WCAG 2.3.1: no more than three flashes per second.)
-- **Final frame = base style.** Entrance animations must end where the element's normal CSS already is,
-  because reduced-motion users and PDFs get no animation at all.
-- **Transforms overflow.** `stamp` scales to 2.2×, which widens the page for a moment and shows a horizontal
-  scrollbar inside fixed-height embeds. `.dd` has `overflow:hidden`; keep it.
-- **Gold on light needs the outline.** Without `-webkit-text-stroke` and the dark drop shadow, gold text
-  disappears on the cream background.
+- **明るさが変わるものはループ周期を1秒以上にします。** 急な点灯と消灯の繰り返しにはしません。回転するグラデーションの枠は、ある1ピクセルの色が1周に1回変わります。1周を1秒以上に保ちます。検査スクリプトは、0.5秒未満の無限ループを FAIL にします（Zenn は「激しく点滅する表示」を禁止しています。WCAG 2.3.1 は1秒に3回を超える点滅を禁じています）。
+- **最後のフレームは基本スタイルと同じにします。** 登場アニメーションは、要素の通常の CSS の状態で終わるようにします。動きを減らす設定の人や PDF では、アニメーションがまったく動かないからです。
+- **transform ははみ出します。** `stamp` は2.2倍まで拡大します。その間ページが一瞬広がり、高さ固定の埋め込みの中に横スクロールバーが出ます。`.dd` には `overflow:hidden` が付いています。外さないでください。
+- **明るい背景の金文字には縁取りが必要です。** `-webkit-text-stroke` と暗いドロップシャドウがないと、金文字はクリーム色の背景に溶けて見えなくなります。
 
-## Tokens
+## トークン
 
-`--a` accent (orange), `--b` blue, `--g` green, `--r` red, `--y` yellow, `--v` violet, each with a soft
-`--*s` background; `--bg`, `--card`, `--ink`, `--mut`, `--line`; `--glow` for halos. Dark values are injected by
-`build.py` (`DARK_VARS`). Change both when re-skinning.
+`--a` アクセント（オレンジ）、`--b` 青、`--g` 緑、`--r` 赤、`--y` 黄、`--v` 紫。それぞれに薄い背景用の `--*s` があります。ほかに `--bg`、`--card`、`--ink`、`--mut`、`--line`、光の輪用の `--glow` があります。ダークモードの値は `build.py`（`DARK_VARS`）が差し込みます。見た目を変えるときは両方を変えてください。

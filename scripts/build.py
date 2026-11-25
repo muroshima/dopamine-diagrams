@@ -79,12 +79,29 @@ def text_w(s, fs):
     return sum(fs if ord(c) > 0x2E7F else fs * 0.6 for c in str(s))
 
 
+# Default UI words. Japanese when the spec contains Japanese text, English otherwise.
+DEFAULTS = {
+    "ja": {"bad_label": "よくある間違い", "good_label": "こうする", "done": "完了！", "decompose_button": "分解する ▶",
+           "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
+           "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
+           "before": "ビフォー", "after": "アフター"},
+    "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
+           "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
+           "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
+           "gem_title": "The one that matters", "before": "Before", "after": "After"},
+}
+
+
+def T(spec, key):
+    return DEFAULTS["ja" if has_cjk(json.dumps(spec, ensure_ascii=False)) else "en"][key]
+
+
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
     need(spec, "title")
     cases = items_of(spec, "cases", dict, ("label", "good"), lo=2, hi=8)
-    bad_l = spec.get("bad_label", "Common mistake")
-    good_l = spec.get("good_label", "Do this instead")
+    bad_l = spec.get("bad_label", T(spec, "bad_label"))
+    good_l = spec.get("good_label", T(spec, "good_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
                   for i in range(len(cases)))
     labs = "".join(f'<label for="{u}-m{i}"><span class="ex-no">{i+1:02d}</span>{E(c["label"])}</label>'
@@ -122,9 +139,9 @@ def render_decompose(spec, u, lv):
     ttl = f'<div class="ttl">{E(spec["title"])}</div>' if spec.get("title") else ""
     body = (f'<input class="h" type="checkbox" id="{u}-s">{ttl}'
             f'<div class="dc-root"><span class="dc-kick">{E(root.get("kicker", ""))}</span>{E(root["text"])}'
-            f'<span class="dc-done gold">{E(spec.get("done", "Done!"))}</span></div>'
-            f'<div class="dc-mid"><label for="{u}-s" class="btn shine"><span class="dc-t1">{E(spec.get("button", "Break it down ▶"))}</span>'
-            f'<span class="dc-t2">{E(spec.get("back", "Back"))}</span></label>'
+            f'<span class="dc-done gold">{E(spec.get("done", T(spec, "done")))}</span></div>'
+            f'<div class="dc-mid"><label for="{u}-s" class="btn shine"><span class="dc-t1">{E(spec.get("button", T(spec, "decompose_button")))}</span>'
+            f'<span class="dc-t2">{E(spec.get("back", T(spec, "back")))}</span></label>'
             f'<div class="dc-hint">{E(spec.get("hint", ""))}</div></div>'
             f'<div class="dc-kids" style="grid-template-columns:repeat({cols},1fr)">{kd}</div>')
     s = f"#{u}-s:checked"
@@ -197,11 +214,13 @@ def _arch_svg(spec, u, mode, focal):
         nh = 48 if any(n.get("sub") for t in tiers for n in t["nodes"]) else 34
         rowgap = 26
         y = 6
+        band_top, names = [], []
         for ti, t in enumerate(tiers):
+            band_top.append(y)
             k = len(t["nodes"])
             bh = 22 + nh + 8
-            out.append(f'<rect class="ar-band" x="2" y="{y:.1f}" width="{W-4}" height="{bh:.1f}" rx="10"/>'
-                       f'<text class="ar-tier" x="12" y="{y+16:.1f}" style="text-anchor:start">{E(t["name"])}</text>')
+            out.append(f'<rect class="ar-band" x="2" y="{y:.1f}" width="{W-4}" height="{bh:.1f}" rx="10"/>')
+            names.append((t["name"], y))
             cy = y + 22 + nh / 2
             for ni, n in enumerate(t["nodes"]):
                 cx = W * (ni + .5) / k
@@ -218,7 +237,7 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     # edges first (under nodes)
-    eds = []
+    eds, curves = [], []
     for e in edges:
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
@@ -239,15 +258,37 @@ def _arch_svg(spec, u, mode, focal):
             else:
                 p0 = (a[0], a[1] + a[3]/2); p3 = (b[0], b[1] - b[3]/2); dy = (p3[1]-p0[1]) * .5
                 p1 = (p0[0], p0[1]+dy); p2 = (p3[0], p3[1]-dy)
+        curves.append((p0, p1, p2, p3))
         d = f"M{p0[0]:.1f} {p0[1]:.1f} C{p1[0]:.1f} {p1[1]:.1f},{p2[0]:.1f} {p2[1]:.1f},{p3[0]:.1f} {p3[1]:.1f}"
         lab = ""
         if e.get("label"):
             mx, my = _bez(p0, p1, p2, p3)
+            if mode != "wide" and b[4] == a[4] + 1:
+                # Phone rows: the plain midpoint lands on the next band's top edge, where the tier name sits.
+                # Put the label in the middle of the gap between the two bands instead (y is monotonic in t).
+                target, lo_t, hi_t = band_top[b[4]] - rowgap / 2, 0.0, 1.0
+                for _ in range(30):
+                    mid = (lo_t + hi_t) / 2
+                    lo_t, hi_t = (mid, hi_t) if _bez(p0, p1, p2, p3, mid)[1] < target else (lo_t, mid)
+                mx, my = _bez(p0, p1, p2, p3, lo_t)
             lw = text_w(e["label"], FSE) + 10
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-FSE/2-4:.1f}" width="{lw:.1f}" height="{FSE+8:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
+    if mode != "wide":
+        # Tier names sit in the top corner of their band. Use the left corner unless an edge enters the band
+        # there (long Japanese names reach the first node's column); then the right corner if that one is free.
+        for name, by in names:
+            nw = text_w(name, FSS) * 1.04 + 6
+            xs = [x for p0, p1, p2, p3 in curves for t in [i / 40 for i in range(41)]
+                  for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
+            left_busy = any(6 <= x <= 12 + nw for x in xs)
+            right_busy = any(W - 12 - nw <= x <= W - 6 for x in xs)
+            if left_busy and not right_busy:
+                out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
+            else:
+                out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():
@@ -321,14 +362,14 @@ def render_compare(spec, u, lv):
         items = "".join(
             f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}">'
             f'{E(it["text"] if isinstance(it, dict) else it)}</div>' for it in d.get("items", []))
-        head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", side))}</span>{E(d.get("title", ""))}</div>'
+        head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
         return head + f'<div class="cp-items">{items}</div>' + msg
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
-            f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", "Show the fix ▶"))}</span>'
-            f'<span class="cp-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
+            f'<span class="cp-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
             f'<div class="cp-stage"><div class="cp-panel cp-before">{panel("Before", "before", "bad")}</div>'
             f'<div class="cp-panel cp-after rb"><div class="in">{panel("After", "after", "good")}</div></div></div>')
     s = f"#{u}-s:checked"
@@ -446,8 +487,8 @@ def render_ladder(spec, u, lv):
         if text_w(l["name"], 12) > barw * 2:
             print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
     n = len(lvls)
-    now_l = spec.get("now_label", "Now")
-    next_l = spec.get("next_label", "Next move")
+    now_l = spec.get("now_label", T(spec, "now_label"))
+    next_l = spec.get("next_label", T(spec, "next_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
     bars = ""
     for i, l in enumerate(lvls):
@@ -455,7 +496,7 @@ def render_ladder(spec, u, lv):
         top = i == n - 1 and spec.get("top_focal", True)
         bars += (f'<label for="{u}-l{i}" class="ld-b ld-b{i}{" ld-top rb" if top else ""}" style="height:{h:.0f}%">'
                  f'<span class="in"><span class="ld-n">{E(l.get("short", f"Lv.{i+1}"))}</span><span class="ld-nm">{E(l["name"])}</span></span></label>')
-    pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", "Where are you? Click a step"))}</div>'
+    pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", T(spec, "prompt")))}</div>'
     pans += "".join(f'<div class="ld-p ld-q{i}"><b class="ld-pt">{E(l.get("short", f"Lv.{i+1}"))} {E(l["name"])}</b>'
                     f'<div>{E(now_l)}: {E(l.get("now", ""))}</div>'
                     f'<div class="ld-nx">{E(next_l)} ▶ <span class="gold">{E(l.get("next", ""))}</span></div></div>' for i, l in enumerate(lvls))
@@ -506,11 +547,11 @@ def render_proportion(spec, u, lv):
     gem = typed(spec, "gem", dict, {}, required=False)
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="pr-top"><div class="ttl">{E(spec["title"])}</div>'
-            f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", "Look closer ▶"))}</span>'
-            f'<span class="pr-t2">{E(spec.get("back", "Back"))}</span></label></div>'
+            f'<label for="{u}-s" class="btn shine"><span class="pr-t1">{E(spec.get("button", T(spec, "proportion_button")))}</span>'
+            f'<span class="pr-t2">{E(spec.get("back", T(spec, "back")))}</span></label></div>'
             f'<div class="pr-g"><div class="pr-dots">{dots}</div><div class="pr-side">'
             f'<div class="pr-v1">{lgd}<p class="pr-say">{E(spec.get("say", ""))}</p><p class="pr-sub">{E(spec.get("say_sub", ""))}</p></div>'
-            f'<div class="pr-v2"><div class="pr-gemt gold">{E(gem.get("title", "The one that matters"))}</div>'
+            f'<div class="pr-v2"><div class="pr-gemt gold">{E(gem.get("title", T(spec, "gem_title")))}</div>'
             f'<p>{E(gem.get("text", ""))}</p><p class="pr-sub">{E(gem.get("sub", ""))}</p></div></div></div>')
     s = f"#{u}-s:checked"
     glow = ("box-shadow:0 0 0 3px var(--ys),0 0 16px var(--glow),0 0 32px var(--a);animation:dd-gem 1.4s ease-in-out infinite;"

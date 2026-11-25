@@ -1,48 +1,44 @@
-# Target: Zenn (`html-embed`)
+# ターゲット: Zenn（`html-embed`）
 
-Zenn renders a fenced code block with the language `html-embed` as a sandboxed figure
-(announced 2026-11-11, Beta: https://info.zenn.dev/2026-11-11-html-embed ,
-spec: https://zenn.dev/zenn/articles/markdown-guide "HTML/CSS の埋め込み").
+Zenn は、言語を `html-embed` にしたコードブロックを、サンドボックス化された図として表示します
+（2026-11-11 発表、ベータ版: https://info.zenn.dev/2026-11-11-html-embed ,
+仕様: https://zenn.dev/zenn/articles/markdown-guide 「HTML/CSS の埋め込み」）。
 
 ```sh
 python3 scripts/build.py spec.json --target zenn -o out.md   # one ```html-embed block per spec
 node scripts/check.mjs out.md --shots .check/out
 ```
 
-Paste each block into the article as is.
+出力された各ブロックを、そのまま記事に貼り付けます。
 
-## Platform limits (as of 2026-11)
+## プラットフォームの制約（2026-11 時点）
 
-| Limit | Value | How this skill handles it |
+| 制約 | 内容 | このスキルでの対応 |
 |---|---|---|
-| Allowed content | HTML + `<style>` only; no `<html>/<head>/<body>` | build.py emits exactly that |
-| JavaScript | not executed (`<script>`, `onclick`) | all states are `:checked` / `:hover` |
-| Links, forms | `<a>` is plain text; form controls hidden except checkbox/radio | buttons are `<label for>` |
-| External files | `<link>`, `@import`, web fonts, `<iframe>` not loaded | system fonts, inline SVG |
-| Size | 50KB per block | build.py fails above 50KB; one pattern is ~7–15KB |
-| Height | 500px shown, the rest scrolls inside | checker fails above 500px in any state |
-| Dark mode | `<html data-theme="dark">` | `[data-theme="dark"] .dd` swaps tokens; OS preference is ignored on purpose |
-| Flashing | banned; Zenn may stop the embed | checker fails loops < 0.5s |
+| 使える内容 | HTML と `<style>` だけ。`<html>/<head>/<body>` は不可 | build.py はちょうどそれだけを出力する |
+| JavaScript | 実行されない（`<script>`、`onclick`） | 状態はすべて `:checked` / `:hover` で作る |
+| リンク、フォーム | `<a>` はただの文字になる。フォーム部品は checkbox と radio 以外は隠される | ボタンは `<label for>` |
+| 外部ファイル | `<link>`、`@import`、Web フォント、`<iframe>` は読み込まれない | システムフォントとインライン SVG |
+| サイズ | 1ブロック50KB | build.py は50KB を超えると失敗する。1パターンはおよそ7〜15KB |
+| 高さ | 500px まで表示し、残りは中でスクロール | 検査はどれか1つの状態でも500px を超えると FAIL |
+| ダークモード | `<html data-theme="dark">` | `[data-theme="dark"] .dd` でトークンを切り替える。OS の設定はあえて無視する |
+| 点滅 | 禁止。Zenn が埋め込みを止めることがある | 検査は0.5秒未満のループを FAIL |
 
-## Width: use 560px, not 640px, as the breakpoint
+## 幅: ブレークポイントは640px ではなく560px にする
 
-Zenn's prompt suggests `@media (max-width: 640px)` and "about 700px on PC". Measured on a published article
-on 2026-11-25 (embed width by browser window width):
+Zenn のプロンプトは `@media (max-width: 640px)` と「PC で約700px」を勧めています。2026-11-25 に公開済みの記事で測った結果は次のとおりです（ブラウザのウィンドウ幅ごとの埋め込み幅）。
 
-| Window | 1440 | 1280 | 1100 | 1024 | 768 | phone |
+| ウィンドウ | 1440 | 1280 | 1100 | 1024 | 768 | スマホ |
 |---|---|---|---|---|---|---|
-| Embed | 706px | 706px | **591px** | **515px** | 649px | ~340px |
+| 埋め込み | 706px | 706px | **591px** | **515px** | 649px | 約340px |
 
-Between about 1000px and 1200px Zenn shows a sidebar and the article column shrinks, so ordinary PC windows
-give 515–600px. With a 640px breakpoint those readers get the phone layout. This skill switches at 560px: wide
-layouts still fit at 561px with text ≥ 12px, and below that (e.g. a 1024px window) the phone layout is the
-right choice. The checker renders at 700, 591, 561, 559 and 340px.
-Re-measure if Zenn changes its layout: open a published article, run
+ウィンドウ幅がおよそ1000〜1200px のとき、Zenn はサイドバーを表示し、記事の列が狭くなります。そのため普通の PC のウィンドウでも515〜600px になります。ブレークポイントが640px だと、この読者にスマホ用のレイアウトが出ます。このスキルは560px で切り替えます。横長レイアウトは561px でも文字12px 以上で収まり、それより狭いとき（1024px のウィンドウなど）はスマホ用のレイアウトが適しています。検査スクリプトは700、591、561、559、340px で描画します。
+Zenn のレイアウトが変わったら測り直してください。公開済みの記事を開き、コンソールで
 `[...document.querySelectorAll('iframe[src*="embed.zenn.studio/html"]')].map(f=>f.getBoundingClientRect().width)`
-in the console.
+を実行します。
 
-## Notes
+## 補足
 
-- Embeds load lazily; a fresh page shows 150px-tall placeholders until scrolled into view.
-- Zenn draws a frame and the label "ユーザー作成コンテンツ" around each embed; budget ~30px for it visually.
-- Older zenn-cli previews show the block as code. Preview on zenn.dev to see it rendered.
+- 埋め込みは遅延読み込みです。開いた直後は、スクロールして画面に入るまで高さ150px のプレースホルダーが出ます。
+- Zenn は各埋め込みの周りに枠と「ユーザー作成コンテンツ」というラベルを付けます。見た目上、約30px を見込んでおきます。
+- 古い zenn-cli のプレビューでは、ブロックがコードとして表示されます。表示を確かめるには zenn.dev でプレビューしてください。

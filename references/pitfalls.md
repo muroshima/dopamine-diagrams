@@ -1,19 +1,19 @@
-# Pitfalls (all hit while building the first diagrams)
+# 落とし穴（最初の図を作ったときに全部踏みました）
 
-| Symptom | Cause | Fix (already in the templates) |
+| 症状 | 原因 | 対処（テンプレートに反映済み） |
 |---|---|---|
-| PC readers on Zenn get the phone layout | Zenn's embed is 515–600px wide in 1000–1200px windows (sidebar shown); the suggested 640px breakpoint catches them | Breakpoint 560px; checker renders 700/591/561/559/340 |
-| A horizontal scrollbar flashes when an answer appears | `stamp` scales to 2.2× and transforms extend the scrollable area | `overflow:hidden` on `.dd` |
-| Rainbow border shows gaps or only covers part of a wide box | The rotating pseudo-element was sized with `inset:-60%`; a wide, short box is not covered at every angle | Pseudo-element is a fixed 1400px square centred on the box |
-| Gold text turns grey | A pattern rule like `.k span{color:var(--mut)}` beat `.gold{color:transparent}` | `.gold` sets `color:transparent!important` |
-| Gold text is unreadable in light mode | Thin gradient text on cream | 1px dark text stroke + dark drop shadow |
-| SVG text under 12px on narrow screens | SVG scales down with its container | build.py sizes fonts for the narrowest width and passes them as CSS variables; checker measures with `getScreenCTM()` |
-| Focal node loses its rainbow stroke on phones | Gradient defined in the hidden wide SVG; `display:none` SVGs do not paint their gradients | Each SVG defines its own gradient id; stroke is set inline |
-| Edge labels sit on top of boxes | Fixed column widths left no room between tiers | Gaps are computed from the widest label between each pair of tiers |
-| Tier names crossed by edges in the narrow layout | Names were centred where edges run | Names sit top-left inside a row band |
-| Embed height checks always fail | Measuring `documentElement.scrollHeight` returns the viewport height | Measure the bottom of the `.dd` element |
-| "Button wraps" false alarm in slides | Slides zoom the diagram 1.3×; the check compared zoomed box height with unzoomed font size | Multiply by the computed `zoom` |
-| PDF shows a half-faded or empty state | Animation never runs in print; elements started at opacity 0 | Base style is the final frame; `@media print` disables animation and shows the useful state |
-| A slide's heading disappears in the PDF | Print showed every step's detail, so the content overflowed and the centred stage pushed it up; screen checks could not see it | Print shows only the focal state; checker also renders slides with print media |
-| Gold text becomes a solid box or gets lines through it in the PDF | Chrome's PDF output mishandles `background-clip:text` and gradient-filled SVG text | `@media print` turns gold and rainbow text into solid colours |
-| Dark mode turns on in a light Zenn page | `prefers-color-scheme` followed the OS | zenn target only listens to `data-theme` |
+| Zenn の PC 読者にスマホ用のレイアウトが出る | 幅1000〜1200px のウィンドウ（サイドバー表示時）では Zenn の埋め込み幅が515〜600px になる。推奨の640px のブレークポイントだと、この読者が引っかかる | ブレークポイントは560px。検査は700/591/561/559/340px で描画する |
+| 答えが出るときに横スクロールバーが一瞬出る | `stamp` が2.2倍に拡大し、transform がスクロール可能な範囲を広げる | `.dd` に `overflow:hidden` |
+| 虹色の枠に切れ目が出る、横長の箱の一部しか覆わない | 回転する疑似要素を `inset:-60%` で大きさ指定していた。横長で背の低い箱は、角度によっては覆いきれない | 疑似要素は箱の中心に置いた1400px 固定の正方形 |
+| 金文字が灰色になる | `.k span{color:var(--mut)}` のようなパターン側のルールが `.gold{color:transparent}` に勝った | `.gold` は `color:transparent!important` を指定 |
+| ライトモードで金文字が読めない | クリーム色の上の細いグラデーション文字 | 1px の暗い文字の縁取りと暗いドロップシャドウ |
+| 狭い画面で SVG の文字が12px 未満になる | SVG はコンテナに合わせて縮む | build.py が最も狭い幅に合わせて文字サイズを決め、CSS 変数で渡す。検査は `getScreenCTM()` で測る |
+| スマホで焦点のノードの虹色の線が消える | グラデーションを、隠れている横長用 SVG で定義していた。`display:none` の SVG はグラデーションを描かない | SVG ごとに自分のグラデーション id を定義し、stroke はインラインで指定 |
+| 接続線のラベルが箱に重なる | 列の幅が固定で、層と層の間に余裕がなかった | 層の間隔は、その間にある最も長いラベルから計算する |
+| 縦並びのレイアウトで層の名前に線が重なる | 名前を、線が通る中央に置いていた | 名前は行の帯の中の左上に置く |
+| 埋め込みの高さチェックが常に失敗する | `documentElement.scrollHeight` を測るとビューポートの高さが返る | `.dd` 要素の下端を測る |
+| スライドで「ボタンが折り返している」と誤検知する | スライドは図を1.3倍にズームしている。チェックはズーム後の箱の高さとズーム前の文字サイズを比べていた | 計算後の `zoom` を掛ける |
+| PDF が半分薄い状態や空の状態になる | 印刷ではアニメーションが動かない。要素の初期値が opacity 0 だった | 基本スタイルを最後のフレームにする。`@media print` でアニメーションを止め、役に立つ状態を見せる |
+| PDF でスライドの見出しが消える | 印刷で全ステップの詳細を出したため内容があふれ、中央寄せのステージが見出しを押し上げた。画面のチェックでは見えなかった | 印刷では焦点の状態だけを見せる。検査はスライドを印刷メディアでも描画する |
+| PDF で金文字が塗りつぶしの箱になる、線が入る | Chrome の PDF 出力は `background-clip:text` とグラデーション塗りの SVG 文字をうまく扱えない | `@media print` で金文字と虹色の文字を単色にする |
+| 明るい Zenn のページでダークモードになる | `prefers-color-scheme` が OS の設定に従った | zenn ターゲットは `data-theme` だけを見る |

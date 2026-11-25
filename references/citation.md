@@ -1,22 +1,20 @@
-# Citing sources in diagrams
+# 図での出典の書き方
 
-When a diagram summarises a report, a standard, or a book, the reader must be able to tell what came from the
-source and what you added. Many publications forbid reproduction without permission; quotation is usually
-allowed when the source is named, the quoted part is clearly marked, and your own content is the main part.
+報告書や規格、書籍を図にまとめるときは、どこが出典の内容で、どこを自分で足したのかを読者が見分けられるようにします。無断転載を禁じている出版物は多くあります。一方で引用は、出典を明記し、引用部分をはっきり区別し、自分の内容が主になっていれば認められるのが普通です。
 
-Put the attribution in the spec's `note`, using one of these forms:
+出典は spec の `note` に、次のどれかの形で書きます。
 
-| Situation | `note` wording (adapt the language) |
+| 状況 | `note` の書き方（言語は合わせて変える） |
 |---|---|
-| Content taken from the source (paraphrased) | `Source: <document>, table 20` |
-| Your own example built on an idea from the source | `Based on: <document>, section 1.4. Case names are fictional` |
-| Mixed | `"Do this instead" from <document>, table 20. "Common mistake" is illustrative` |
-| Your own mapping or labels | `Category labels are our own` |
-| Invented numbers | `Counts are illustrative` |
+| 出典の内容を言い換えて載せた | `出典: <文書名> 表20` |
+| 出典の考え方をもとに自分で作った例 | `参考: <文書名> 1.4節。事例名は架空です` |
+| 両方が混ざっている | `「こうする」は <文書名> 表20 より。「よくある間違い」は説明用の例です` |
+| 分類やラベルを自分で付けた | `分類ラベルは独自のものです` |
+| 数値を作った | `件数は説明用の値です` |
 
-Also:
+あわせて次も守ります。
 
-- List the full source (publisher, title, version, year, URL) once at the end of the article or deck.
-- Paraphrase; do not copy whole tables word for word into a diagram.
-- Text in quotation marks must match the source exactly. If you reworded it, drop the quotation marks.
-- Do not let a diagram strengthen the source ("should" becoming "must", a recommendation becoming a ban).
+- 出典の正式な情報（発行元、タイトル、版、年、URL）は、記事やスライドの最後に1回まとめて載せます。
+- 言い換えて載せます。表を丸ごと一語一句そのまま図にしません。
+- かぎかっこで囲んだ文は、出典と完全に一致させます。言い回しを変えたなら、かぎかっこを外します。
+- 図で出典の主張を強めません（「すべき」を「しなければならない」に、推奨を禁止に変えるなど）。

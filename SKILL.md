@@ -1,106 +1,92 @@
 ---
 name: dopamine-diagrams
-description: Build attention-grabbing, interactive explainer diagrams (architecture, flows, cycles, before/after, maturity ladders, case explorers, breakdowns, "the one dot that matters") with game-show effects — flowing rainbow titles, gold text, rainbow borders that run around the focal box, neon pulses, stamp-in reveals — in pure HTML + CSS. One JSON spec builds to a Zenn html-embed block (no JavaScript), a standalone HTML page, or a 16:9 slide deck that prints to PDF. Includes a render checker that clicks every state at every width. Use when someone wants a diagram that people will actually stop and look at, for readers with short attention spans ("ドパガキ"), for Zenn articles, blog posts, or slides.
+description: 目を引くインタラクティブな解説図（アーキテクチャ図、フロー、循環、ビフォー/アフター、成熟度の段、状況別の判断表、分解、平均に埋もれる1件）を、HTML と CSS だけで作る。流れる虹色の見出し、金文字、注目の箱を回る虹色の枠、ネオンの脈動、ハンコのように出る答えといった派手な演出が付く。1つの JSON から Zenn の html-embed ブロック（JavaScript なし）、単体の HTML ページ、PDF に印刷できる16:9スライドを出力し、全幅で全部のボタンを押す表示検査も付く。ドパガキ向けの図、Zenn 記事やブログ、スライドで「止まって見てもらえる図」が欲しいときに使う。English keywords - architecture diagram, flow, cycle, before/after, maturity ladder, explorer, game-show effects, Zenn html-embed, slides.
 license: MIT
 ---
 
 # dopamine-diagrams
 
-Diagrams for readers who scroll past anything that does not glow. The look is loud on purpose, but the loudness
-is spent on one or two focal points so the diagram still teaches something.
+光っていないものは読み飛ばす読者のための図です。わざと派手にしていますが、派手さは1〜2か所の焦点にだけ使います。そうしないと図が何も伝えなくなります。
 
-Everything is HTML + CSS. Interactions use hidden checkbox/radio inputs and `:checked`, so the same output runs
-where JavaScript is banned (Zenn `html-embed`) and in slides.
+すべて HTML と CSS です。操作は隠したチェックボックスやラジオボタンと `:checked` で作るので、JavaScript が禁止の場所（Zenn の `html-embed`）でもスライドでも同じ出力が動きます。
 
-## Files and when to read them
+英語版は `SKILL.en.md` と `references/en/` にあります。内容は同じです。ボタンなどの既定の文言は、spec に日本語が含まれていれば日本語、そうでなければ英語になります。
 
-| File | Read when |
+## ファイルと読むタイミング
+
+| ファイル | 読むとき |
 |---|---|
-| `references/targets/zenn.md` | Output goes into a Zenn article |
-| `references/targets/slides.md` | Output goes into a slide deck or PDF |
-| `references/targets/standalone.md` | Output is a single HTML page (docs, blog, README preview) |
-| `references/patterns/<pattern>.md` | After you pick a pattern: spec fields, limits, examples |
-| `references/effects.md` | Before changing any effect or adding a new one (safety limits) |
-| `references/interactions.md` | Before adding or changing a clickable state |
-| `references/pitfalls.md` | When something renders wrong, and before writing new CSS |
-| `references/citation.md` | The diagram summarises someone else's document |
-| `templates/base.css`, `templates/parts/*.css` | Editing the look |
-| `scripts/build.py` | Always: JSON spec → output |
-| `scripts/check.mjs` | Always: render check after every build |
+| `references/targets/zenn.md` | Zenn の記事に載せる |
+| `references/targets/slides.md` | スライドや PDF に載せる |
+| `references/targets/standalone.md` | 単体の HTML ページにする（ドキュメント、ブログ、README のプレビュー） |
+| `references/patterns/<pattern>.md` | 図の種類を決めたあと。spec の項目、上限、例 |
+| `references/effects.md` | 演出を変える、または足す前（安全上の上限） |
+| `references/interactions.md` | クリックで切り替わる状態を足す、または変える前 |
+| `references/pitfalls.md` | 表示がおかしいとき。新しい CSS を書く前 |
+| `references/citation.md` | 他人の文書を要約した図のとき |
+| `templates/base.css`, `templates/parts/*.css` | 見た目を変えるとき |
+| `scripts/build.py` | 毎回。JSON の spec から出力を作る |
+| `scripts/check.mjs` | 毎回。組み立てるたびに表示を検査する |
 
-## Workflow (do not skip steps)
+## 手順（飛ばさない）
 
-1. **Decide the target**: `zenn`, `slides`, or `standalone`. Read its file in `references/targets/`.
-2. **Decide whether a diagram helps.** If a three-column table says the same thing, use the table.
-3. **Pick a pattern** from the table below and read its `references/patterns/` file.
-4. **Spend the emphasis budget** (next section): choose the one or two focal elements and the intensity level.
-5. **Write the spec** as JSON (copy one from `examples/`). Content only; no HTML in the spec.
-6. **Build**:
+1. **出力先を決める**: `zenn`、`slides`、`standalone` のどれか。`references/targets/` の該当ファイルを読む。
+2. **図にする価値があるか決める。** 3列の表で同じことが言えるなら表にする。
+3. 下の表から**図の種類を選び**、`references/patterns/` の該当ファイルを読む。
+4. **派手さの予算を配る**（次の節）。焦点にする要素を1〜2個と、強さのレベルを決める。
+5. **spec を JSON で書く**（`examples/` から1つコピーする）。中身だけを書き、HTML は書かない。
+6. **組み立てる**:
    ```sh
    python3 scripts/build.py spec.json --target zenn -o out.md
    python3 scripts/build.py a.json b.json --target slides -o deck.html
    python3 scripts/build.py spec.json --target standalone -o page.html --intensity 3
    ```
-   build.py stops with `error: …` when a spec is missing a field or has a value that would break the output, and
-   prints `WARN: …` when a label will not fit the phone layout. Fix the spec; do not ignore warnings.
-7. **Check** until there are 0 FAIL:
+   必須の項目がない、または出力を壊す値が入っていると、build.py は `error: …` を出して止まります。スマホのレイアウトに収まらないラベルがあると `WARN: …` を出します。spec を直してください。警告を無視しないこと。
+7. FAIL が0件になるまで**検査する**:
    ```sh
-   npm run setup          # once; uses the installed Google Chrome via playwright-core
+   npm run setup          # 最初の1回だけ。playwright-core 経由でインストール済みの Google Chrome を使う
    node scripts/check.mjs out.md --shots .check/out
    node scripts/check.mjs deck.html --pdf deck.pdf
    ```
-   Without Node/Chrome the script still runs the static checks and says the rendered checks were skipped.
-   Tell the user when that happened; do not claim the layout was verified.
-8. **Look at the screenshots** (`--shots`: for zenn every state at 700px and 340px, light and dark; for the other
-   targets the full page after the last click). The checker
-   measures overflow, cut-off text (including labels wider than their SVG box), height, text size, wrapping and
-   loop speed; it cannot see empty space, edges crossing each other or labels sitting on an edge.
-9. If the diagram summarises a source document, apply `references/citation.md` to the `note`.
+   Node や Chrome がなくても静的な検査は走り、表示の検査を飛ばしたことを表示します。その場合はユーザーにそう伝え、レイアウトを確かめたとは言わないこと。
+8. **スクリーンショットを見る**（`--shots`。zenn は状態ごとに700px と340px、ライトとダーク。ほかの出力先は最後のクリック後のページ全体）。検査では、はみ出し、切れた文字（SVG の箱より長いラベルを含む）、高さ、文字サイズ、折り返し、ループの速さを測ります。空きすぎた余白、交差する線、線の上に乗ったラベルは検査では見つけられません。
+9. 元になる文書を要約した図なら、`note` に `references/citation.md` を当てる。
 
-## Patterns
+## 図の種類
 
-| You want to show… | Pattern | Interaction |
+| 見せたいもの | 種類 | 操作 |
 |---|---|---|
-| Components and how a request flows between them | `architecture` | Flow animates along edges; hover a box to light its connections |
-| "In situation X, do Y (not Z)" for several situations | `explorer` | Pick a situation; the answer stamps in inside a rainbow border |
-| A vague statement that must become concrete items | `decompose` | Click to split it; pieces stamp in one by one; a gold "done" stamp lands |
-| The habit vs. the better way | `compare` | Click to flip "before" into "after" inside a rainbow border |
-| A cycle that repeats (and when to restart from the goal) | `loop` | Light runs round the ring; steps light up in turn |
-| Linear steps | `flow` | Light runs along the line; pick a step to read it; the focal step sits in a rainbow border |
-| Levels / maturity / staged plans | `ladder` | Pick your level; "now" and a gold "next move" appear |
-| The rare case the average hides | `proportion` | 100 dots; one click fades the majority and lights up the one that matters |
+| コンポーネントと、リクエストの流れ | `architecture` | 線に沿って光が流れる。箱にマウスを乗せると、つながる線だけが光る |
+| 「X のときは Y する（Z ではない）」を複数の状況で | `explorer` | 状況を選ぶと、虹色の枠の中に答えがスタンプで出る |
+| 具体的な項目に分けるべき、ふわっとした一文 | `decompose` | クリックで分解。項目が1つずつ現れ、金色の「完了」スタンプが押される |
+| いつものやり方と、よりよいやり方 | `compare` | クリックでビフォーが虹色の枠のアフターに切り替わる |
+| 繰り返す循環（と、目的から戻り直すタイミング） | `loop` | 円に沿って光が回り、手順が順に光る |
+| 一直線の手順 | `flow` | 線に沿って光が流れる。手順を選ぶと説明が出る。焦点の手順は虹色の枠 |
+| 段階、成熟度、段階的な計画 | `ladder` | 自分の段を選ぶと、「いま」と金文字の「次の一手」が出る |
+| 平均に埋もれる、まれだけど大事な1件 | `proportion` | 100個の点。クリックで多数派が薄れ、大事な1個が光る |
 
-Nothing fits? Compose from the `base.css` primitives, then run the checker.
+どれも合わなければ `base.css` の部品から組み、検査を通してください。
 
-## Emphasis budget
+## 派手さの予算
 
-The effects only work when most of the diagram is calm.
+図の大部分が静かなときだけ、演出が効きます。
 
-- **One or two focal elements per diagram.** Gold text, rainbow border and neon go there and nowhere else.
-  In `architecture`, list them in `focal`; in `flow`, set `focal` to one step. In the other patterns the answer
-  area (or the top level, or the gem) is already the focal point.
-- **Intensity** (`--intensity` or `"intensity"` in the spec):
-  - `1` calm: plain title, accent-colour border, soft entrance. For internal docs and conservative decks.
-  - `2` standard (default): rainbow title, gold, neon, stamps, rainbow border.
-  - `3` full: faster border spin and pulse, glowing flow lines. For a hero diagram or a talk opener.
-- Never put two rainbow borders side by side. Never make every node focal.
+- **焦点は1つの図に1〜2個。** 金文字、虹色の枠、ネオンはそこにだけ使います。`architecture` では `focal` に並べ、`flow` では `focal` に手順を1つ指定します。ほかの種類では、答えの欄（または最上段、または光る1個）が最初から焦点です。
+- **強さ**（`--intensity` か spec の `"intensity"`）:
+  - `1` 控えめ: 普通の見出し、アクセント色の枠、やわらかい登場。社内資料や堅めのスライド向け。
+  - `2` 標準（既定）: 虹色の見出し、金文字、ネオン、スタンプ、虹色の枠。
+  - `3` 全開: 枠の回転と脈動が速く、線も光る。看板の図やトークの最初の1枚向け。
+- 虹色の枠を2つ並べない。全部の箱を焦点にしない。
 
-## Hard rules
+## 守ること
 
-- **No flashing.** No animation loop shorter than 0.5s, and no on/off blinking at any speed. Glow must ease in
-  and out over ≥1s. Zenn bans flashing embeds and WCAG 2.3.1 caps flashes at 3 per second. The checker fails
-  loops under 0.5s.
-- **Motion off means fully readable.** Every element's base style is its final state; animations only add the
-  entrance. `prefers-reduced-motion` and `@media print` turn all animation off.
-- **Text ≥ 12px as rendered**, including SVG text after scaling. `build.py` sizes architecture text for the
-  narrowest width; the checker verifies it.
-- **Colour is never the only signal.** Every state change also changes text (button label, strikethrough, tag).
-- **No JavaScript in the zenn target.** The other targets also avoid it so one spec works everywhere.
-- **Do not edit generated output by hand.** Change the spec or the templates and rebuild.
+- **点滅させない。** 0.5秒より短いアニメーションのループは使わず、速さにかかわらず点いたり消えたりさせない。光の強弱は1秒以上かけて変える。Zenn は点滅する埋め込みを禁止していて、WCAG 2.3.1 は点滅を1秒に3回までとしています。検査は0.5秒未満のループを FAIL にします。
+- **動きを止めても全部読める。** どの要素も基本のスタイルが最後の状態で、アニメーションは登場の動きを足すだけ。`prefers-reduced-motion` と `@media print` ではアニメーションをすべて止める。
+- **表示される文字は12px 以上。** 縮小された SVG の文字も含みます。`build.py` は architecture の文字をいちばん狭い幅に合わせて決め、検査がそれを確かめます。
+- **色だけで区別しない。** 状態が変わるときは文字も変える（ボタンの文言、取り消し線、タグ）。
+- **zenn では JavaScript を使わない。** ほかの出力先でも使わないので、1つの spec がどこでも動きます。
+- **出力を手で直さない。** spec かテンプレートを直して組み立て直す。
 
-## Extending
+## 拡張
 
-New pattern = a renderer function in `scripts/build.py` (registered in `RENDER`), a CSS file in
-`templates/parts/`, a reference file in `references/patterns/`, and an example spec in `examples/`.
-Generate state selectors with the diagram's unique id (see `render_explorer`), keep CSS class names prefixed
-per pattern, then run the checker on all three targets.
+新しい種類を足すときは、`scripts/build.py` の描画関数（`RENDER` に登録）、`templates/parts/` の CSS、`references/patterns/` と `references/en/patterns/` の説明、`examples/` と `examples/en/` のサンプル spec を用意します。状態のセレクタは図ごとの一意な id で作り（`render_explorer` を参照）、CSS のクラス名は種類ごとの接頭辞を付け、3つの出力先すべてで検査を通してください。

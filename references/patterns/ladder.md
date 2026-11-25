@@ -1,34 +1,32 @@
-# Pattern: ladder
+# パターン: ladder
 
-Bars that rise left to right; the top one has a rainbow border. Clicking a bar shows "now" and the gold
-"next move" for that level. Nothing is selected at first, so the panel asks the reader to place themselves.
+左から右へ高くなる棒が並び、いちばん上の棒に虹色の枠が付きます。棒をクリックすると、その段の「いま」と金色の「次の一手」が出ます。最初は何も選ばれていないので、パネルは読者に自分の位置を選ぶよう促します。
 
-Use it for maturity models, levels, staged rollout plans.
+成熟度モデル、レベル分け、段階的な展開計画に使います。
 
 ## Spec
 
 ```json
 {
   "pattern": "ladder",
-  "title": "How mature is your on-call?",
-  "prompt": "Where is your team? Click a step",
-  "now_label": "Now",
-  "next_label": "Next move",
+  "title": "あなたのチームのオンコールはどの段？",
+  "prompt": "いまどの段？ 段をクリック",
+  "now_label": "いま",
+  "next_label": "次の一手",
   "levels": [
-    {"name": "Hero", "now": "One person knows how to fix things", "next": "Write down the top five fixes"}
+    {"name": "ヒーロー頼み", "now": "直し方を知っているのは1人だけ", "next": "よくある直し方の上位5つを書き出す"}
   ]
 }
 ```
 
-| Field | Notes |
+| フィールド | 補足 |
 |---|---|
-| `levels[].name` | Shown on the bar on wide screens (hidden on phones; the panel repeats it) |
-| `levels[].short` | Bar label; default `Lv.N` |
-| `levels[].now`, `next` | One sentence each |
-| `top_focal` | `false` removes the rainbow border from the top bar |
+| `levels[].name` | 広い画面では棒の上に表示（スマホでは隠し、パネルで繰り返す） |
+| `levels[].short` | 棒のラベル。既定は `Lv.N` |
+| `levels[].now`, `next` | それぞれ1文 |
+| `top_focal` | `false` にすると、いちばん上の棒の虹色の枠を外す |
 
-## Limits
+## 上限
 
-- 2–6 levels (build.py stops outside that range). A name must fit in two lines on its bar; build.py warns when
-  it will not (roughly ≤ 24 ASCII / 12 CJK characters with 5 levels).
-- Print/PDF shows the bars and the prompt.
+- 段は2〜6個（範囲外だと build.py が止まります）。名前は棒の上で2行に収まる長さにします。収まらないときは build.py が警告します（5段ならおよそ ASCII 24文字、CJK 12文字まで）。
+- 印刷と PDF では、棒と促しの文を表示します。

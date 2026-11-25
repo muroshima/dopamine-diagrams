@@ -1,0 +1,17 @@
+{
+  "pattern": "decompose",
+  "title": "Turn a slogan into requirements",
+  "root": {"kicker": "Vague requirement", "text": "Make the system secure"},
+  "button": "Break it down ▶",
+  "back": "Back",
+  "hint": "You can neither build nor test this sentence",
+  "done": "Testable!",
+  "children": [
+    {"tag": "Access", "text": "Admins must sign in with MFA"},
+    {"tag": "Review", "text": "Roles are reviewed every month"},
+    {"tag": "Secrets", "text": "No secrets in code; use a secret manager"},
+    {"tag": "CI", "text": "Dependencies are scanned on every PR"},
+    {"tag": "Audit", "text": "Access logs are kept for one year"}
+  ],
+  "note": "Example content for the decompose pattern"
+}

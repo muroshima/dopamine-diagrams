@@ -1,39 +1,35 @@
-# Pattern: explorer
+# パターン: explorer
 
-"In situation X, do Y — not Z", for 3–8 situations. The reader picks a situation on the left (chips on
-narrow screens); the panel shows the situation, an optional struck-through common mistake, and the answer
-stamping in inside a rainbow border.
+「X のときは Y する。Z ではない」を3〜8個の状況で見せます。読者は左側（狭い画面ではチップ）で状況を選びます。パネルには状況、取り消し線付きのよくある間違い（任意）、虹色の枠の中にスタンプされる答えが出ます。
 
-Use it for decision tables people misremember: error handling, escalation rules, AI fallback behaviour,
-on-call runbooks. If there is no "common mistake" worth showing, omit `bad`; the pattern still works.
+覚え違いが多い判断表に使います。エラー処理、エスカレーションのルール、AI のフォールバック動作、オンコールの手順書などです。見せる価値のある「よくある間違い」がなければ `bad` を省いてください。それでも成り立ちます。
 
 ## Spec
 
 ```json
 {
   "pattern": "explorer",
-  "title": "The API call failed. Now what?",
-  "bad_label": "Common mistake",
-  "good_label": "Do this instead",
+  "title": "API 呼び出しが失敗した。どうする？",
+  "bad_label": "よくある間違い",
+  "good_label": "こうする",
   "cases": [
-    {"label": "429 Too Many", "situation": "You are rate limited",
-     "bad": "Retry immediately in a loop", "good": "Wait for Retry-After, then retry"}
+    {"label": "429 Too Many", "situation": "レート制限にかかった",
+     "bad": "すぐにループで再試行する", "good": "Retry-After の時間だけ待ってから再試行する"}
   ],
-  "note": "Source: … / 'Common mistake' is illustrative"
+  "note": "出典: … ／「よくある間違い」は説明用の例です"
 }
 ```
 
-| Field | Required | Notes |
+| フィールド | 必須 | 補足 |
 |---|---|---|
-| `cases[].label` | yes | Chip text. ≤ 22 ASCII / 11 CJK characters keeps chips on one line |
-| `cases[].situation` | no | Panel heading; defaults to `label` |
-| `cases[].bad` | no | Shown struck through. Say in `note` if these are invented |
-| `cases[].good` | yes | The answer; one sentence |
-| `bad_label`, `good_label` | no | Defaults: "Common mistake", "Do this instead" |
+| `cases[].label` | はい | チップの文字。ASCII 22文字、CJK 11文字までならチップが1行に収まる |
+| `cases[].situation` | いいえ | パネルの見出し。既定は `label` |
+| `cases[].bad` | いいえ | 取り消し線付きで表示。作った例なら `note` にそう書く |
+| `cases[].good` | はい | 答え。1文で |
+| `bad_label`, `good_label` | いいえ | 既定は spec に日本語が含まれていれば「よくある間違い」「こうする」、そうでなければ "Common mistake"、"Do this instead" |
 
-## Limits
+## 上限
 
-- 2–8 cases (build.py stops outside that range); 3 or more reads best. More than 8 does not fit 500px on
-  phones; split into two diagrams.
-- The first case is what PDF/print shows. Put the most important one first.
-- Focal point is the answer box; do not add other gold or rainbow elements.
+- ケースは2〜8個（範囲外だと build.py が止まります）。3個以上がいちばん読みやすいです。8個を超えるとスマホで500px に収まりません。図を2つに分けてください。
+- 印刷と PDF では先頭のケースを表示します。いちばん大事なものを先頭に置きます。
+- 焦点は答えの箱です。ほかに金色や虹色の要素を足さないでください。

@@ -1,17 +1,33 @@
 {
   "pattern": "decompose",
-  "title": "Turn a slogan into requirements",
-  "root": {"kicker": "Vague requirement", "text": "Make the system secure"},
-  "button": "Break it down ▶",
-  "back": "Back",
-  "hint": "You can neither build nor test this sentence",
-  "done": "Testable!",
+  "title": "スローガンを要件に分ける",
+  "root": {
+    "kicker": "あいまいな要件",
+    "text": "システムを安全にする"
+  },
+  "hint": "この一文のままでは、作ることもテストすることもできません",
+  "done": "テストできる！",
   "children": [
-    {"tag": "Access", "text": "Admins must sign in with MFA"},
-    {"tag": "Review", "text": "Roles are reviewed every month"},
-    {"tag": "Secrets", "text": "No secrets in code; use a secret manager"},
-    {"tag": "CI", "text": "Dependencies are scanned on every PR"},
-    {"tag": "Audit", "text": "Access logs are kept for one year"}
+    {
+      "tag": "認証",
+      "text": "管理者は多要素認証でログインする"
+    },
+    {
+      "tag": "棚卸し",
+      "text": "ロールを毎月見直す"
+    },
+    {
+      "tag": "秘密情報",
+      "text": "コードに秘密情報を書かず、シークレットマネージャに置く"
+    },
+    {
+      "tag": "CI",
+      "text": "PR ごとに依存パッケージをスキャンする"
+    },
+    {
+      "tag": "監査",
+      "text": "アクセスログを1年間残す"
+    }
   ],
-  "note": "Example content for the decompose pattern"
+  "note": "decompose のサンプルです"
 }

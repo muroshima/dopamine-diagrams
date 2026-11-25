@@ -1,23 +1,39 @@
 {
   "pattern": "compare",
-  "title": "Does every request need sign-off?",
-  "button": "Question the habit ▶",
-  "back": "Back",
+  "title": "その申請、全部に承認がいる？",
+  "button": "慣習を疑う ▶",
   "before": {
-    "label": "Before", "title": "Everything waits for the manager",
-    "items": ["Routine renewal", "Small office purchase", "New vendor", "Large contract"],
-    "message": "\"It always needed approval\" is copied into the new system as is"
+    "title": "全部が課長待ち",
+    "items": [
+      "定例の更新",
+      "少額の備品購入",
+      "新しい取引先",
+      "大型の契約"
+    ],
+    "message": "「前から承認が必要だった」が、そのまま新システムに持ち込まれる"
   },
   "after": {
-    "label": "After", "title": "Route by risk",
+    "title": "リスクで振り分ける",
     "items": [
-      {"text": "Routine renewal → automatic", "tone": "good"},
-      {"text": "Small purchase → automatic", "tone": "good"},
-      {"text": "New vendor → manager", "tone": "neutral"},
-      {"text": "Large contract → manager", "tone": "neutral"}
+      {
+        "text": "定例の更新 → 自動",
+        "tone": "good"
+      },
+      {
+        "text": "少額の購入 → 自動",
+        "tone": "good"
+      },
+      {
+        "text": "新しい取引先 → 課長",
+        "tone": "neutral"
+      },
+      {
+        "text": "大型の契約 → 課長",
+        "tone": "neutral"
+      }
     ],
-    "headline": "Half the queue gone",
-    "message": "Ask whether the decision is needed at all; if it is, scale it to the risk"
+    "headline": "承認待ちが半分に",
+    "message": "まず承認そのものが要るかを問い、要るならリスクに見合った重さにする"
   },
-  "note": "Example content for the compare pattern"
+  "note": "compare のサンプルです"
 }

@@ -1,46 +1,40 @@
-# Pattern: architecture
+# パターン: architecture
 
-Tiers of boxes (client → edge → backend → data, or any left-to-right story) with dashes of light flowing along
-the connections. The focal box gets a rainbow border and a slow glow. Hovering a box dims everything that is
-not connected to it (CSS `:has`), which lets readers trace one path without JavaScript.
+箱を層ごとに並べ（クライアント → エッジ → バックエンド → データなど、左から右へ進む話なら何でも）、接続線に沿って光の破線が流れます。焦点の箱には虹色の枠が付き、ゆっくり光ります。箱にマウスを乗せると、その箱とつながっていないものが暗くなります（CSS の `:has`）。JavaScript なしで、1本の経路をたどれます。
 
-Two SVGs are generated from the same spec: a wide one (tiers as columns) and a narrow one (tiers as rows).
-The 560px media query shows one of them.
+同じ spec から SVG を2つ作ります。横長用（層が列）と縦長用（層が行）です。560px のメディアクエリでどちらかを表示します。
 
 ## Spec
 
 ```json
 {
   "pattern": "architecture",
-  "title": "Where does a request go?",
-  "alt": "Text alternative describing the flow",
+  "title": "リクエストはどこを通る？",
+  "alt": "流れを説明する代替テキスト",
   "tiers": [
-    {"name": "CLIENT", "nodes": [{"id": "web", "label": "Browser", "sub": "SPA"}]},
-    {"name": "BACKEND", "nodes": [{"id": "api", "label": "API"}]}
+    {"name": "クライアント", "nodes": [{"id": "web", "label": "ブラウザ", "sub": "SPA"}]},
+    {"name": "バックエンド", "nodes": [{"id": "api", "label": "API"}]}
   ],
   "edges": [{"from": "web", "to": "api", "label": "HTTPS"}],
   "focal": ["api"],
-  "note": "Hover a box to trace its connections"
+  "note": "箱にマウスを乗せるとつながりをたどれます"
 }
 ```
 
-| Field | Required | Notes |
+| フィールド | 必須 | 補足 |
 |---|---|---|
-| `tiers[].name` | yes | Short; shown at the top of each column / row |
-| `tiers[].nodes[].id` | yes | Unique; used for edges and hover selectors |
-| `nodes[].label`, `nodes[].sub` | label yes | `sub` is a second, smaller line |
-| `edges[]` | no | `from` must be in the same or an earlier tier (edges flow forward) |
-| `edges[].label` | no | Short (≤ 10 characters). Gaps between tiers widen to fit labels |
-| `focal` | no | One id or a list of at most 2 (build.py stops at 3) |
-| `alt` | recommended | Becomes the SVG `aria-label` |
+| `tiers[].name` | はい | 短く。各列（各行）の上に表示 |
+| `tiers[].nodes[].id` | はい | 一意にする。接続線と hover のセレクタに使う |
+| `nodes[].label`, `nodes[].sub` | label ははい | `sub` は小さめの2行目 |
+| `edges[]` | いいえ | `from` は同じ層か前の層にあること（線は前に向かって流れる） |
+| `edges[].label` | いいえ | 短く（10文字以内）。ラベルが入るように層の間隔が広がる |
+| `focal` | いいえ | id を1つか、2つまでのリスト（3つで build.py が止まる） |
+| `alt` | 推奨 | SVG の `aria-label` になる |
 
-## Limits (complexity budget)
+## 上限（複雑さの予算）
 
-- ≤ 4 tiers, ≤ 3 nodes per tier, ≤ 9 nodes in total. More than that is two diagrams. (build.py stops above 6
-  tiers or 4 nodes in a tier; the checker fails labels that do not fit their box.)
-- Edges between neighbouring tiers only, if they carry labels. Edges that skip a tier are drawn but their label
-  may land on a box.
-- Two pairs of edges that cross (A→D and B→C) look messy; reorder nodes within a tier, or drop one edge.
-- On phones, 3 nodes share 320 units: keep labels ≤ 10 ASCII / 5 CJK characters there.
-- Width grows past 600 units when labels need room, and all fonts grow with it so rendered text stays ≥ 12px
-  at the narrowest wide layout (561px). The checker confirms it.
+- 層は4つまで、1層の箱は3つまで、箱は全部で9つまで。それを超えるなら図を2つに分けます（build.py は層が6つを超えるか、1層の箱が4つを超えると止まります。検査は箱に収まらないラベルを FAIL にします）。
+- ラベル付きの接続線は、隣り合う層の間だけにします。層を飛ばす線も描かれますが、ラベルが箱の上に乗ることがあります。
+- 交差する線の組（A→D と B→C）は見づらくなります。層の中で箱を並べ替えるか、線を1本消します。
+- スマホでは3つの箱で320ユニットを分け合います。そこでのラベルは ASCII 10文字、CJK 5文字までにします。
+- ラベルに場所が要ると幅は600ユニットを超えて広がり、文字もすべて一緒に大きくなります。横長レイアウトの最も狭い幅（561px）でも、表示される文字は12px 以上を保ちます。検査で確かめます。

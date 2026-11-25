@@ -1,31 +1,30 @@
-# Pattern: flow
+# パターン: flow
 
-Numbered steps on a line with light running along it. Clicking a step shows its detail below; the focal step
-(the last one by default) shows its detail inside a rainbow border.
+番号付きのステップが線の上に並び、線に沿って光が流れます。ステップをクリックすると、その詳細が下に出ます。焦点のステップ（既定は最後のステップ）は、詳細が虹色の枠の中に出ます。
 
-Use it for linear processes: release steps, onboarding, an incident timeline.
+一本道の手順に使います。リリースの手順、オンボーディング、障害の時系列などです。
 
 ## Spec
 
 ```json
 {
   "pattern": "flow",
-  "title": "How a change reaches production",
+  "title": "変更が本番に届くまで",
   "steps": [
-    {"label": "Branch", "detail": "Work on a feature branch; main stays deployable"},
-    {"label": "Ship", "detail": "Merge deploys automatically"}
+    {"label": "ブランチ", "detail": "feature ブランチで作業する。main はいつでもデプロイできる状態に保つ"},
+    {"label": "リリース", "detail": "マージすると自動でデプロイされる"}
   ],
   "focal": 1
 }
 ```
 
-| Field | Notes |
+| フィールド | 補足 |
 |---|---|
-| `steps[].label` | ≤ 10 ASCII / 6 CJK characters; it sits under a 44px circle |
-| `steps[].detail` | One or two sentences |
-| `focal` | 0-based index of the step that matters most; default is the last. build.py rejects an index outside the steps |
+| `steps[].label` | ASCII 10文字、CJK 6文字まで。44px の円の下に入る |
+| `steps[].detail` | 1〜2文 |
+| `focal` | いちばん大事なステップの、0始まりの番号。既定は最後。範囲外の番号は build.py がはじく |
 
-## Limits
+## 上限
 
-- 2–7 steps (build.py stops outside that range). With more than 4 steps, phones wrap the steps into rows of three and hide the line.
-- Print/PDF shows only the focal step's detail and highlights its circle.
+- ステップは2〜7個（範囲外だと build.py が止まります）。4個を超えると、スマホではステップを3個ずつの行に折り返し、線を隠します。
+- 印刷と PDF では、焦点のステップの詳細だけを表示し、その円を強調します。

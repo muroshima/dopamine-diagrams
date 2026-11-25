@@ -1,15 +1,32 @@
 {
   "pattern": "ladder",
-  "title": "How mature is your on-call?",
-  "prompt": "Where is your team? Click a step",
-  "now_label": "Now",
-  "next_label": "Next move",
+  "title": "あなたのチームのオンコール、どの段？",
   "levels": [
-    {"name": "Hero", "now": "One person knows how to fix things", "next": "Write down the top five fixes"},
-    {"name": "Runbooks", "now": "Runbooks exist but go stale", "next": "Link each alert to its runbook"},
-    {"name": "Rotation", "now": "A fair rotation with handovers", "next": "Review every page in a weekly retro"},
-    {"name": "Automated", "now": "Common fixes run automatically", "next": "Measure toil and cut the biggest one"},
-    {"name": "Self-healing", "now": "Most incidents resolve themselves", "next": "Keep the humans for the unknowns"}
+    {
+      "name": "属人",
+      "now": "直し方を知っているのが1人だけ",
+      "next": "よくある直し方を5つ書き出す"
+    },
+    {
+      "name": "手順書",
+      "now": "手順書はあるが古くなる",
+      "next": "アラートごとに手順書へのリンクを付ける"
+    },
+    {
+      "name": "輪番",
+      "now": "引き継ぎ付きの公平な当番がある",
+      "next": "呼び出しを毎週の振り返りで全部見直す"
+    },
+    {
+      "name": "自動化",
+      "now": "よくある対処は自動で走る",
+      "next": "手作業の量を測り、いちばん大きいものを減らす"
+    },
+    {
+      "name": "自己修復",
+      "now": "ほとんどの障害が勝手に直る",
+      "next": "人は未知の障害に集中する"
+    }
   ],
-  "note": "Example content for the ladder pattern"
+  "note": "ladder のサンプルです"
 }
