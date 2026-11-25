@@ -116,7 +116,8 @@ DEFAULTS = {
            "combo_prompt": "確かめた条件を押す", "combo_count": "クリア", "combo_reach": "あと1つ！",
            "combo_full": "そろった！", "combo_last": "残りはこれ", "combo_locked": "全部そろうと結論が出る",
            "combo_stamp": "確定！",
-           "day": "{n}日目", "stamp_done": "済", "reward": "ごほうび", "stamp_prompt": "どこまで進んだ？ マスをクリック"},
+           "day": "{n}日目", "stamp_done": "済", "reward": "ごほうび", "stamp_prompt": "どこまで進んだ？ マスをクリック",
+           "foresee": "山場"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
@@ -126,7 +127,8 @@ DEFAULTS = {
            "combo_prompt": "Tick each one you have checked", "combo_count": "met", "combo_reach": "One more!",
            "combo_full": "All set!", "combo_last": "Last one", "combo_locked": "Meet them all to unlock the verdict",
            "combo_stamp": "Unlocked!",
-           "day": "Day {n}", "stamp_done": "Done", "reward": "Reward", "stamp_prompt": "How far along? Click a square"},
+           "day": "Day {n}", "stamp_done": "Done", "reward": "Reward", "stamp_prompt": "How far along? Click a square",
+           "foresee": "Key"},
 }
 
 
@@ -1061,11 +1063,30 @@ def render_flow(spec, u, lv):
         fail(f"flow: 2 to 7 steps; got {n}")
     focal = as_index(spec.get("focal", n - 1), n, "flow: focal")
     hush = hush_on(spec, "flow")
+    judge = spec.get("judge", False)
+    if not isinstance(judge, bool):
+        fail(f"flow: judge must be true or false; got {judge!r:.40}")
+    # foresee: a still mark (★ and a word) on the focal step before it is opened, like a pachinko hold changing colour
+    fs = spec.get("foresee", False)
+    if fs is True:
+        fs = T(spec, "foresee")
+    elif fs is not False and (not isinstance(fs, str) or not fs.strip()):
+        fail(f"flow: foresee must be true, false or a short word; got {fs!r:.40}")
+    fs = fs.strip() if fs else fs
+    # the narrowest step column: a 340px phone (308px inside; rows of three at 31% beyond 4 steps) or the narrowest
+    # PC embed (529px inside). The mark is the word plus ★, gap, padding and border (~34px); it wraps when wider
+    col = min(.31 * 308 if n > 4 else (308 - 6 * (n - 1)) / n, (529 - 6 * (n - 1)) / n)
+    if fs and tier_w(fs, 12) + 34 > col:
+        print(f"WARN: flow: foresee '{fs}' is wider than a step ({col:.0f}px) and wraps; keep it to a word like "
+              f"山場 or Key", file=sys.stderr)
+    if fs and focal == 0:
+        print("WARN: flow: foresee with focal 0 shows nothing; that step is open from the start", file=sys.stderr)
+    mark = (f' <span class="tb t3 fl-fs"><span class="st" aria-hidden="true">★</span>{E(fs)}</span>' if fs else "")
     inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
     new_count_check(steps, "flow", "steps")
     track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}">'
                     f'<span class="fl-dot">{i+1}{new_badge(st, f"flow step {i+1}")}</span>'
-                    f'<span class="fl-lb">{E(st["label"])}</span></label>'
+                    f'<span class="fl-lb">{E(st["label"])}</span>{mark if i == focal else ""}</label>'
                     for i, st in enumerate(steps))
     pans = ""
     for i, st in enumerate(steps):
@@ -1074,8 +1095,11 @@ def render_flow(spec, u, lv):
         if i == focal:
             inner = f'<div class="rb"><div class="in">{inner}</div></div>'
         pans += f'<div class="fl-p fl-p{i}">{inner}</div>'
+    # judge line: the lane's edge the picked step's card slides into, like a rhythm-game note reaching its line
+    jl = '<span class="fl-jl" aria-hidden="true"></span>' if judge else ""
     body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
-            f'<div class="fl-track{" fl-many" if n > 4 else ""}">{track}</div><div class="fl-panel">{pans}</div>')
+            f'<div class="fl-track{" fl-many" if n > 4 else ""}">{track}</div>'
+            f'<div class="fl-panel{" fl-judge" if judge else ""}">{jl}{pans}</div>')
     dot_on = ("background:#9a3412;border-color:transparent;color:#fff" if lv == 1 else
               "background:linear-gradient(180deg,#cc4a10,#a3360b);border-color:transparent;color:#fff;animation:dd-neon var(--pulse) ease-in-out infinite")
     css = []
@@ -1084,8 +1108,15 @@ def render_flow(spec, u, lv):
         css.append(f"{sel}~.fl-track label[for={u}-f{i}] .fl-dot{{{dot_on}}}")
         css.append(f"#{u}-f{i}:focus-visible~.fl-track label[for={u}-f{i}] .fl-dot{{outline:2px solid var(--b);outline-offset:2px}}")
         css.append(f"{sel}~.fl-panel .fl-p{i}{{display:block;animation:pop .3s ease}}")
+        # one keyframes name per step: picking another step restarts the flare on the shared line. With hush the
+        # focal step stays calm: no flare there
+        if judge and lv > 1 and not (hush and i == focal):
+            css.append(f"{sel}~.fl-panel .fl-jl{{animation:{u}-j{i} 2.9s ease-in-out both}}"
+                       f"@keyframes {u}-j{i}{{0%,25%,100%{{box-shadow:0 0 6px var(--glow)}}62%{{box-shadow:0 0 11px var(--glow)}}}}")
         if i == focal:
             css.append(f"{sel}~.fl-panel .fl-p{i} .rb{{animation:var(--enter) .55s ease-out both}}")
+            if fs:   # opened: the mark gives way to the detail (hidden, not removed, so the track does not jump)
+                css.append(f"{sel}~.fl-track .fl-fs{{visibility:hidden}}")
             if hush:
                 css.append(f"{sel}~.ttl,{sel}~.fl-track .fl-step:not(.fl-focal) .fl-dot{{{STILL}}}"
                            f"{sel}~.fl-track::before{{{FADE}}}" + hush_base(f"#{u} .fl-track::before"))

@@ -87,6 +87,7 @@ The effects only work when most of the diagram is calm.
   - `3` full: faster border spin and pulse, glowing flow lines. For a hero diagram or a talk opener.
 - Never put two rainbow borders side by side. Never make every node focal.
 - To show importance in steps, use `importance` (1-4). As with a pachinko hold colour or a gacha rarity, the rainbow (4) is the top, used once.
+- In `flow`, `"judge": true` slides the picked step's card into a judge line that glows once and stays lit (a rhythm game). It moves once per pick and adds no height. `"foresee": true` puts a still "★ Key" mark on the focal step before it is opened; opening it swaps the mark for the detail (a pachinko foresee).
 
 ## Hard rules
 
