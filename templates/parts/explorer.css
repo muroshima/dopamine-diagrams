@@ -8,7 +8,7 @@
 .dd .ex-ls label.chip-on .ex-no{color:#fff}
 .dd .ex-ps{flex:1;background:var(--card);border:2px solid var(--line);border-radius:12px;padding:16px;min-height:280px}
 .dd .ex-p{display:none}
-.dd .ex-hd{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+.dd .ex-hd{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin-bottom:12px}
 .dd .ex-num{font-size:40px;line-height:1}
 .dd .ex-sit{font-size:20px;font-weight:900}
 .dd .ex-bad{padding:10px 12px;border-radius:8px;background:var(--rs);font-size:14px}

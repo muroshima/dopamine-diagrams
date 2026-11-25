@@ -6,49 +6,57 @@
       "label": "400 Bad Request",
       "situation": "リクエストそのものが間違っている",
       "bad": "同じリクエストをもう一度送る",
-      "good": "どの項目が不正かを表示して止める"
+      "good": "どの項目が不正かを表示して止める",
+      "importance": 2
     },
     {
       "label": "401 Unauthorized",
       "situation": "トークンの期限切れ",
       "bad": "黙ってログアウトさせる",
-      "good": "トークンを1回だけ更新して再送する"
+      "good": "トークンを1回だけ更新して再送する",
+      "importance": 3
     },
     {
       "label": "403 Forbidden",
       "situation": "権限がない",
       "bad": "間隔をあけて再試行する",
-      "good": "誰に権限をもらえばいいかを案内する"
+      "good": "誰に権限をもらえばいいかを案内する",
+      "importance": 2
     },
     {
       "label": "404 Not Found",
       "situation": "対象が消えている",
       "bad": "真っ白な画面を出す",
-      "good": "削除されたことを伝え、戻り先を出す"
+      "good": "削除されたことを伝え、戻り先を出す",
+      "importance": 1
     },
     {
       "label": "409 Conflict",
       "situation": "他の人が先に更新した",
       "bad": "相手の変更を上書きする",
-      "good": "両方の版を見せて、利用者に選ばせる"
+      "good": "両方の版を見せて、利用者に選ばせる",
+      "importance": 3
     },
     {
       "label": "429 Too Many",
       "situation": "回数制限にかかった",
       "bad": "すぐにループで再送する",
-      "good": "Retry-After の秒数だけ待って再送する"
+      "good": "Retry-After の秒数だけ待って再送する",
+      "importance": 2
     },
     {
       "label": "500 Server Error",
       "situation": "サーバー側で壊れた",
       "bad": "スタックトレースをそのまま出す",
-      "good": "間隔をあけて再試行し、わかりやすいエラーを出す"
+      "good": "間隔をあけて再試行し、わかりやすいエラーを出す",
+      "importance": 4
     },
     {
       "label": "Timeout",
       "situation": "時間内に返事がない",
       "bad": "失敗とみなして送り直す",
-      "good": "冪等キーで処理状況を先に確かめる"
+      "good": "冪等キーで処理状況を先に確かめる",
+      "importance": 3
     }
   ],
   "note": "explorer のサンプルです"

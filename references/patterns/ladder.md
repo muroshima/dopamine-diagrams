@@ -23,6 +23,7 @@
 |---|---|
 | `levels[].name` | 広い画面では棒の上に表示（スマホでは隠し、パネルで繰り返す） |
 | `levels[].short` | 棒のラベル。既定は `Lv.N` |
+| `levels[].importance`, `levels[].importance_label` | 重要度 1〜4 と、その言葉。選んだ段の説明の見出しにバッジが出る（explorer と同じ。4は1つまで）。成熟度の段そのものではなく、段ごとの重要さを示したいときに使う |
 | `levels[].now`, `next` | それぞれ1文 |
 | `top_focal` | `false` にすると、いちばん上の棒の虹色の枠を外す |
 
