@@ -6,5 +6,6 @@
   "center": {"text": "Again", "sub": "change is the default"},
   "back_label": "Goal changed? Go back to the top",
   "laps": 3,
+  "hush": true,
   "note": "Example content for the loop pattern"
 }

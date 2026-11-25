@@ -15,5 +15,6 @@
   },
   "back_label": "目的が変わったら最初に戻る",
   "laps": 3,
+  "hush": true,
   "note": "loop のサンプルです"
 }

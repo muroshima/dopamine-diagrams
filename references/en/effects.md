@@ -15,7 +15,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.gg` | Gauge with a goal line. Switching to after grows or shrinks it from the before length; when it reaches the goal, "Reached ✓" stamps in. Reaching is also said in words and by the border | compare `metric.goal` | The reached mark pops |
 | Approach ring (architecture `focal`) | A ring 1.8x the size shrinks onto the focal box once and fades (a rhythm game tap circle). No loop; invisible when still | architecture focal boxes | Not shown |
 | `.ci` | A slanted band slides in once from the left with one line and stays (0.55s, easing out). The text is not slanted | explorer `cases[].cutin`, compare `before.cutin` / `after.cutin` (not with `reveal:"flip"`) | Unslanted accent band. Print: border and text only |
-| Hush (spec `hush`) | When the answer appears, the title and the other steps stop moving; only decoration without text (the running line, the light across the button) fades over 1s, and back over 1s. Text never fades | flow's focal step, compare's after | Same. No fading with reduced motion or in print |
+| Hush (spec `hush`) | When the answer appears, the title and the other steps stop moving; only decoration without text (the running line, the light across the button, the light round the ring) fades (over 1s in flow and compare, 1.2s in loop; `--hfade` .35 in light, .2 in dark). At the same time `.dd-dim` darkens the background round the focus a little with a `radial-gradient` over 1.2s (the title band is left as it is). Both go back over the same time. Text never fades | flow's focal step, compare's after, loop (once the ring has lit up once; no click, so it stays) | Same. No fading or darkening with reduced motion or in print |
 | Judge line (flow `judge`) | Picking a step slides its card (the detail heading) in from the right (0.7s, once) until it settles against a judge line on the detail panel's left edge (a rhythm-game note). On arrival the line glows brighter over 1s and back over 1s. The line never goes out; it stays lit. Each step has its own keyframes name, so each new pick moves once. Picking another step restarts the glow from the beginning. With `hush`, opening the focal step does not make the line glow. The line is a border, so it survives printing without backgrounds | flow | The card does not move; the line is a solid line without glow |
 | Foresee (flow `foresee`) | A "★ Key" mark under the focal step's label before it is opened (a pachinko foresee). Shown with the `.tb.t3` (high) tier's colour, solid line, star and word, not colour alone. Static. Opening that step hides the mark (its space stays, so nothing shifts) and the detail takes its place | flow's focal step | Same (only t3's glow goes). Print keeps the mark |
 | Step-up (ladder `stepup`) | The levels below the picked one light up from the bottom, each with a ✓; shown by the mark, not colour alone. One-way, never on and off | ladder | The mark pops instead of stamping |
@@ -41,9 +41,16 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
   scrollbar inside fixed-height embeds. `.dd` has `overflow:hidden`; keep it.
 - **Gold on light needs the outline.** Without `-webkit-text-stroke` and the dark drop shadow, gold text
   disappears on the cream background.
+- **Darken the background, never the text.** `.dd-dim` sits under every box and every text (`z-index:-1` in a root
+  with `isolation:isolate`), so only text drawn straight on the background lands on it, and the title band (the top 64px) is masked out
+  with `mask-image` (the rainbow title has light stops). At the darkest corner in theory (`--hdim` black .08) `--mut`
+  keeps 4.9:1 and `--rt` 5.2:1 in light mode; measured on the samples' pixels once fully dark, the lowest is the loop
+  note (`--mut`) at 5.18:1; `--r` (#dc2626) drops to 3.9:1, so red
+  text on the background uses `--rt` there. In dark mode darkening only raises the contrast of the light text, and
+  it needs .55 to show at all. Ramp it over ≥ 1s both ways: a quick dim is a single flash.
 
 ## Tokens
 
 `--a` accent (orange), `--b` blue, `--g` green, `--r` red, `--y` yellow, `--v` violet, each with a soft
-`--*s` background; `--bg`, `--card`, `--ink`, `--mut`, `--line`; `--glow` for halos. Dark values are injected by
+`--*s` background; `--bg`, `--card`, `--ink`, `--mut`, `--line`; `--glow` for halos; `--rt` red for text on the background, `--hdim` and `--hfade` for hush. Dark values are injected by
 `build.py` (`DARK_VARS`). Change both when re-skinning.
