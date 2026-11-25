@@ -17,7 +17,8 @@
     "items": [
       {
         "text": "定例の更新 → 自動",
-        "tone": "good"
+        "tone": "good",
+        "new": true
       },
       {
         "text": "少額の購入 → 自動",

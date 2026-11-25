@@ -16,6 +16,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.ci` | A slanted band slides in once from the left with one line and stays (0.55s, easing out). The text is not slanted | explorer `cases[].cutin`, compare `before.cutin` / `after.cutin` (not with `reveal:"flip"`) | Unslanted accent band. Print: border and text only |
 | Hush (spec `hush`) | When the answer appears, the title and the other steps stop moving; only decoration without text (the running line, the light across the button) fades over 1s, and back over 1s. Text never fades | flow's focal step, compare's after | Same. No fading with reduced motion or in print |
 | Step-up (ladder `stepup`) | The levels below the picked one light up from the bottom, each with a ✓; shown by the mark, not colour alone. One-way, never on and off | ladder | The mark pops instead of stamping |
+| `.nb` | A small tilted tag on what changed (NEW in a gacha 10-pull summary). Pops in once, never glows | flow `steps[].new`, compare `items[].new` | Same. Print: border and text only |
 | Flip (explorer `reveal:"flip"`) | A face-down card turns once in .6s (`rotateY`). No loop | Answers readers should guess first | Same. Motion off switches at once; print shows the face only |
 | `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
 | `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" (「完了！」 in Japanese) | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |

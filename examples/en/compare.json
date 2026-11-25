@@ -20,7 +20,8 @@
     "items": [
       {
         "text": "Renewal → auto",
-        "tone": "good"
+        "tone": "good",
+        "new": true
       },
       {
         "text": "Small spend → auto",

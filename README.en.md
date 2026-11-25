@@ -41,7 +41,7 @@ Click to break it down. The pieces appear one by one, then a gold stamp lands.
 
 Click to flip "before" into "after".
 
-<img src="docs/en/compare.png" alt="Compare, after side: inside a rainbow border, a slanted cut-in band "Half weren't needed", the count rolled down from 24 to 12, a gauge past its goal line of 15 marked "Reached ✓", four requests routed by risk and the gold headline 'Half the queue gone'">
+<img src="docs/en/compare.png" alt="Compare, after side: inside a rainbow border, an item with a NEW tag, a slanted cut-in band "Half weren't needed", the count rolled down from 24 to 12, a gauge past its goal line of 15 marked "Reached ✓", four requests routed by risk and the gold headline 'Half the queue gone'">
 
 ### loop: a cycle that repeats, and when to restart from the goal
 
@@ -51,7 +51,7 @@ Light runs round the ring. The dotted arrow is the way back when the goal change
 
 ### flow: linear steps
 
-Light runs along the line. Pick a step to read it.
+Light runs along the line. Pick a step to read it. Steps that changed can carry a small tag such as NEW.
 
 <img src="docs/en/flow.png" alt="Flow: Branch, PR, CI, Review and Ship on a line; the selected CI step shows its detail below">
 
