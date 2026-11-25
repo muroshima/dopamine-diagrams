@@ -19,24 +19,25 @@
     "title": "Route by risk",
     "items": [
       {
-        "text": "Routine renewal → automatic",
+        "text": "Renewal → auto",
         "tone": "good"
       },
       {
-        "text": "Small purchase → automatic",
+        "text": "Small spend → auto",
         "tone": "good"
       },
       {
-        "text": "New vendor → manager",
+        "text": "New vendor → lead",
         "tone": "neutral"
       },
       {
-        "text": "Large contract → manager",
+        "text": "Big contract → lead",
         "tone": "neutral"
       }
     ],
     "headline": "Half the queue gone",
-    "message": "Ask whether the decision is needed at all; if it is, scale it to the risk"
+    "message": "Is it needed? If so, scale it to the risk",
+    "cutin": "Half weren't needed"
   },
   "note": "Example content for the compare pattern",
   "metric": {

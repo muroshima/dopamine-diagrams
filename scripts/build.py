@@ -148,6 +148,18 @@ def tier_badge(spec, item, where):
     return f'<span class="tb t{t}"><span class="st" aria-hidden="true">{"★" * t}</span>{E(word)}</span>'
 
 
+def cutin(item, where):
+    """A slanted band that cuts in once with a one-line verdict, like a pachinko cut-in. "" when absent."""
+    t = item.get("cutin")
+    if t is None:
+        return ""
+    if not isinstance(t, str) or not t.strip():
+        fail(f"{where}: cutin must be a non-empty string; got {t!r:.40}")
+    if text_w(t, 16) > 260:
+        print(f"WARN: {where}: cutin '{t[:30]}' is long; keep it to one short line", file=sys.stderr)
+    return f'<div class="ci"><span>{E(t)}</span></div>'
+
+
 def tier_count_check(spec, items, where):
     tops = sum(1 for it in items if isinstance(it, dict) and it.get("importance") == 4)
     if tops > 1:
@@ -167,6 +179,8 @@ def render_explorer(spec, u, lv):
     if reveal not in (None, "stamp", "flip"):
         fail(f"explorer: reveal must be 'stamp' or 'flip'; got {reveal!r:.40}")
     flip = reveal == "flip"
+    if flip and any(c.get("cutin") for c in cases):
+        fail("explorer: cutin cannot be used with reveal 'flip'; the band would give the hidden answer away")
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
                   for i in range(len(cases)))
     if flip:   # one checkbox per case turns its card over
@@ -199,7 +213,8 @@ def render_explorer(spec, u, lv):
     for i, c in enumerate(cases):
         bad = (f'<div class="ex-bad"><b>{E(bad_l)}</b><s>{E(c["bad"])}</s></div>' if c.get("bad") else "")
         pans += (f'<div class="ex-p ex-p{i}"><div class="ex-hd"><span class="ex-num gold">{i+1:02d}</span>'
-                 f'<span class="ex-sit">{E(c.get("situation", c["label"]))}</span>{tier_badge(spec, c, f"explorer case {i+1}")}</div>{bad}'
+                 f'<span class="ex-sit">{E(c.get("situation", c["label"]))}</span>{tier_badge(spec, c, f"explorer case {i+1}")}</div>'
+                 f'{cutin(c, f"explorer case {i+1}")}{bad}'
                  + (flip_card(i, c) if flip else
                     f'<div class="ex-good rb"><div class="in"><b class="gold">{E(good_l)}</b>'
                     f'<div class="ex-ok">{E(c["good"])}</div></div></div>') + '</div>')
@@ -211,7 +226,7 @@ def render_explorer(spec, u, lv):
         sel = f"#{u}-m{i}:checked~.ex-g"
         css.append(f"{sel} label[for={u}-m{i}]{{{chip}}}{sel} label[for={u}-m{i}] .ex-no{{color:#fff}}")
         css.append(f"#{u}-m{i}:focus-visible~.ex-g label[for={u}-m{i}]{{outline:2px solid var(--b);outline-offset:1px}}")
-        css.append(f"{sel} .ex-p{i}{{display:block;animation:pop .3s ease}}")
+        css.append(f"{sel} .ex-p{i}{{display:block;animation:pop .3s ease}}{sel} .ex-p{i} .ci{{animation:dd-cut .55s cubic-bezier(.2,.8,.2,1) both}}")
         if flip:
             # only the shown case's card can be focused or read; the hidden side of a card is hidden from both
             css.append(f"#{u}-m{i}:not(:checked)~#{u}-f{i}{{visibility:hidden}}"
@@ -847,7 +862,7 @@ def render_compare(spec, u, lv):
         head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
-        return head + metric(key) + f'<div class="cp-items">{items}</div>' + msg
+        return head + cutin(d, f"compare {key}") + metric(key) + f'<div class="cp-items">{items}</div>' + msg
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
             f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
@@ -859,6 +874,8 @@ def render_compare(spec, u, lv):
            f"{s}~.cp-top .cp-t1,{s}~.cp-stage .cp-before{{display:none}}{s}~.cp-top .cp-t2{{display:inline}}"
            f"{s}~.cp-stage .cp-after{{display:block;animation:var(--enter) .55s ease-out both}}"
            f"{s}~.cp-stage .cp-after .cnt{{animation:dd-count 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
+           f"{s}~.cp-stage .cp-after .ci{{animation:dd-cut .55s cubic-bezier(.2,.8,.2,1) .2s both}}"
+           f"#{u} .cp-before .ci{{animation:dd-cut .55s cubic-bezier(.2,.8,.2,1) .2s both}}"
            f"{s}~.cp-stage .cp-after .gg-fill{{animation:dd-fill 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
            f"{s}~.cp-stage .cp-after .gg-ok .gg-st{{animation:var(--enter) .55s ease-out 1.6s both}}"
            f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")

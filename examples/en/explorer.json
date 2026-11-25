@@ -9,7 +9,8 @@
       "situation": "The request itself is wrong",
       "bad": "Retry the same request",
       "good": "Show which field is invalid and stop",
-      "importance": 2
+      "importance": 2,
+      "cutin": "Stop here!"
     },
     {
       "label": "401 Unauthorized",

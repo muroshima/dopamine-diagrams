@@ -7,7 +7,8 @@
       "situation": "リクエストそのものが間違っている",
       "bad": "同じリクエストをもう一度送る",
       "good": "どの項目が不正かを表示して止める",
-      "importance": 2
+      "importance": 2,
+      "cutin": "ここで止める！"
     },
     {
       "label": "401 Unauthorized",
