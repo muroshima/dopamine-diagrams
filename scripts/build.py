@@ -217,12 +217,20 @@ def _arch_svg(spec, u, mode, focal):
                     for t in tiers]
             gaps = []
             for ti in range(T - 1):
-                labs = [text_w(e["label"], FSE) + 18 for e in edges
-                        if e.get("label") and sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]]
-                # same-tier edges bulge into the gap on their right (the last tier: on its left)
-                labs += [text_w(e["label"], FSE) + 18 for e in edges if e.get("label") and tid[e["from"]] == tid[e["to"]]
-                         and (tid[e["from"]] == ti or (tid[e["from"]] == T - 1 and ti == T - 2))]
-                gaps.append(max([34] + labs))
+                # labels of edges between neighbouring tiers, and of edges that skip tiers (on their first hop)
+                labs = [text_w(e["label"], FSE) + 18 for e in edges if e.get("label")
+                        and (sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]
+                             or (tid[e["from"]] == ti and tid[e["to"]] > ti + 1))]
+                # same-tier edges bulge into the gap on their right (the last tier: on its left); both sides add up
+                def bulge_need(t):
+                    ws = [text_w(e["label"], FSE) + 10 if e.get("label") else 0 for e in edges
+                          if tid[e["from"]] == tid[e["to"]] == t
+                          and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)]
+                    return (max(ws) + 20 + 10 * (len(ws) - 1)) if ws else 0
+                side_need = bulge_need(ti) if ti < T - 1 else 0
+                if ti == T - 2:
+                    side_need += bulge_need(T - 1)
+                gaps.append(max([34, side_need + 10] + labs))
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
             return colw, gaps, need, max(MINW, need)
 
@@ -259,8 +267,6 @@ def _arch_svg(spec, u, mode, focal):
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
         ty = max(27, math.ceil(1.1 * FSS + 6))   # tier name baseline: ascent ~1em (Japanese), ~1.1em (emoji); band top y=6
         top = max(top, ty + math.ceil(0.3 * FSS) + 6)   # room for the descent before the first node
-        if T == 1 and any(e.get("label") and tid[e["from"]] == tid[e["to"]] for e in edges):
-            gap = max(gap, FSE + 14)   # single column: a same-tier edge label sits between two stacked nodes
         nh = round(FS + FSS + 26) if any(n.get("sub") for t in tiers for n in t["nodes"]) else round(FS + 22)
         maxn = max(len(t["nodes"]) for t in tiers)
         H = top + maxn * (nh + gap) + 6
@@ -303,10 +309,6 @@ def _arch_svg(spec, u, mode, focal):
                 pos[n["id"]] = (cx, cy, w, nh, ti)
             y += bh + rowgap
         H = y - rowgap + 4
-    # adjacency for hover dimming
-    nb = {i: set() for i in pos}
-    for e in edges:
-        nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     # ---- edges. Drawn under the tier names and the nodes, so they are routed around nodes rather than through.
     M = 4   # clearance between a routed line and a node box
     boxes = [(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2) for (cx, cy, w, h, _) in pos.values()]
@@ -346,7 +348,7 @@ def _arch_svg(spec, u, mode, focal):
             return (p0, (p0[0] + (g - p0[0]) * 4 / 3, p0[1]), (p3[0] + (g - p3[0]) * 4 / 3, p3[1]), p3)
         return (p0, (p0[0], p0[1] + (g - p0[1]) * 4 / 3), (p3[0], p3[1] + (g - p3[1]) * 4 / 3), p3)
 
-    def through(pts, cross, mid):
+    def through(pts, mid):
         """Segments for a polyline whose odd legs cross a tier band in a straight line."""
         return [straight(pts[i], pts[i + 1]) if i % 2 else mid(pts[i], pts[i + 1]) for i in range(len(pts) - 1)]
 
@@ -354,55 +356,73 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     eds, curves, lrects, routes = [], [], [], []
-    extra_h = 0
+    extra_h, nbulge, lanes = 0, {}, {}
+
+    def no_lane(e, tier_name):
+        print(f"WARN: architecture edge {e['from']}->{e['to']} has no free lane through tier '{tier_name}' in the {mode} "
+              f"layout and runs under a node; put fewer nodes in that tier or connect neighbouring tiers", file=sys.stderr)
     for e in edges:
         a, b = pos[e["from"]], pos[e["to"]]
         if b[4] < a[4]:
             raise SystemExit(f'edge {e["from"]}->{e["to"]} goes backwards; order tiers so edges flow forward')
         same, near = b[4] == a[4], abs(nord[e["from"]] - nord[e["to"]]) == 1
+        lwid = text_w(e["label"], FSE) + 10 if e.get("label") else 0
         if mode == "wide":
-            if same and ((near and not e.get("label")) or T == 1):
+            if same and near and not e.get("label"):
                 down = b[1] > a[1]
                 p0 = (a[0], a[1] + (a[3]/2 if down else -a[3]/2)); p3 = (b[0], b[1] - (b[3]/2 if down else -b[3]/2))
                 segs = [vseg(p0, p3)]
-            elif same:   # swing out into the gap beside the column, clear of the nodes in between
-                side = 1 if a[4] < T - 1 else -1
-                g = band_x[a[4]][1] + gapw[a[4]] / 2 if side > 0 else band_x[a[4]][0] - gapw[a[4] - 1] / 2
-                segs = [bulge((a[0] + side * a[2] / 2, a[1]), (b[0] + side * b[2] / 2, b[1]), 0, g)]
-            else:        # cross intermediate columns through the free space between their nodes
+            elif same:   # swing out beside the column; nested when several share a side
+                side = 1 if (a[4] < T - 1 or T == 1) else -1
+                k = nbulge[(a[4], side)] = nbulge.get((a[4], side), -1) + 1
+                edge_x = band_x[a[4]][1] if side > 0 else band_x[a[4]][0]
+                g = edge_x + side * (max(14, lwid / 2 + 10) + 10 * k + 6 * (abs(nord[e["from"]] - nord[e["to"]]) - 1))
+                dy = (a[3] / 4) * (1 if b[1] > a[1] else -1)   # off the side centre, where tier-to-tier lines leave
+                segs = [bulge((a[0] + side * a[2] / 2, a[1] + dy), (b[0] + side * b[2] / 2, b[1] - dy), 0, g)]
+            else:        # cross intermediate columns through free space between their nodes and other such lines
                 start, end = (a[0] + a[2] / 2, a[1]), (b[0] - b[2] / 2, b[1])
                 pts = [start]
                 for ti in range(a[4] + 1, b[4]):
                     x0b, x1b = band_x[ti]
                     target = a[1] + (b[1] - a[1]) * (((x0b + x1b) / 2 - start[0]) / (end[0] - start[0]))
                     blocks = [(cy - h / 2 - M, cy + h / 2 + M) for (cx, cy, w, h, t2) in pos.values() if t2 == ti]
+                    blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
                     yy = free_spot(ty + 8, H - 8, blocks, target)
-                    pts += [(x0b, target if yy is None else yy), (x1b, target if yy is None else yy)]
+                    if yy is None:
+                        no_lane(e, tiers[ti]["name"]); yy = target
+                    lanes.setdefault(ti, []).append(yy)
+                    pts += [(x0b, yy), (x1b, yy)]
                 pts.append(end)
-                segs = through(pts, 0, hseg)
+                segs = through(pts, hseg)
         else:
             if same and near and not e.get("label"):
                 right = b[0] > a[0]
                 p0 = (a[0] + (a[2]/2 if right else -a[2]/2), a[1]); p3 = (b[0] - (b[2]/2 if right else -b[2]/2), b[1])
                 segs = [hseg(p0, p3)]
-            elif same:   # swing below the row (the last row: above it), into the gap between rows
-                side = -1 if (a[4] == T - 1 and T > 1) else 1
+            elif same:   # swing below the row into the gap (a second one above it); the last row gets extra room
+                k = nbulge[(a[4], 0)] = nbulge.get((a[4], 0), -1) + 1
+                side = -1 if (k % 2 and a[4] > 0) else 1
                 top_y = band_top[a[4]]
                 g = top_y + bh + rowgap / 2 if side > 0 else top_y - rowgap / 2
                 if side > 0 and a[4] == T - 1:
                     extra_h = max(extra_h, rowgap)
-                segs = [bulge((a[0], a[1] + side * a[3] / 2), (b[0], b[1] + side * b[3] / 2), 1, g)]
-            else:        # rows in between: go down through the free space between their nodes
+                dx = (a[2] / 4) * (1 if b[0] > a[0] else -1)   # off the bottom centre, where row-to-row lines leave
+                segs = [bulge((a[0] + dx, a[1] + side * a[3] / 2), (b[0] - dx, b[1] + side * b[3] / 2), 1, g)]
+            else:        # rows in between: go down through free space between their nodes and other such lines
                 start, end = (a[0], a[1] + a[3] / 2), (b[0], b[1] - b[3] / 2)
                 pts = [start]
                 for ti in range(a[4] + 1, b[4]):
                     y0b = band_top[ti]
                     target = a[0] + (b[0] - a[0]) * (((y0b + bh / 2) - start[1]) / (end[1] - start[1]))
                     blocks = [(cx - w / 2 - M, cx + w / 2 + M) for (cx, cy, w, h, t2) in pos.values() if t2 == ti]
+                    blocks += [(v - 7, v + 7) for v in lanes.get(ti, [])]
                     xx = free_spot(6, W - 6, blocks, target)
-                    pts += [(target if xx is None else xx, y0b), (target if xx is None else xx, y0b + bh)]
+                    if xx is None:
+                        no_lane(e, tiers[ti]["name"]); xx = target
+                    lanes.setdefault(ti, []).append(xx)
+                    pts += [(xx, y0b), (xx, y0b + bh)]
                 pts.append(end)
-                segs = through(pts, 1, vseg)
+                segs = through(pts, vseg)
         curves.extend(segs)
         routes.append((e, a, b, segs))
     # labels after every route is known, so a label can keep clear of nodes, other labels and other lines
