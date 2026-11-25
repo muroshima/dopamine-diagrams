@@ -9,7 +9,7 @@ slides      -> one HTML deck, 1280x720 per spec, printable to PDF (motion stops 
 
 Standard library only.
 """
-import argparse, hashlib, html, json, math, pathlib, re, sys
+import argparse, hashlib, html, html.parser, json, math, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TPL = ROOT / "templates"
@@ -1577,6 +1577,162 @@ def minify(css):
     return re.sub(r"\s*([{};:,>])\s*", r"\1", css).strip()
 
 
+# ---------------------------------------------------------------- pruning
+# A Zenn article body is capped at 80,000 characters and most of a block is CSS (all of base.css + the part), so each
+# block drops what its own HTML can never match. Generic on purpose: it knows nothing about patterns or class names.
+# Safe side: a selector is dropped only when it requires a class or id (outside any (...) or [...]) that the HTML does
+# not have. :not()/:is()/:has() arguments, attribute and element-only selectors, :root etc. are never proof of disuse.
+# @keyframes / @property are dropped only when no kept declaration (custom properties included, so --enter:stamp keeps
+# stamp) and no inline style mentions their name.
+class _Used(html.parser.HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.names, self.styles = set(), []
+
+    def handle_starttag(self, tag, attrs):
+        for k, v in attrs:
+            if k == "class" and v:
+                self.names.update("." + c for c in v.split())
+            elif k == "id" and v:
+                self.names.add("#" + v)
+            elif k == "style" and v:
+                self.styles.append(v)
+
+    handle_startendtag = handle_starttag
+
+
+def _scan(s, i, stop):
+    """Index of the first char of `stop` at nesting depth 0 from i (strings, (), [] skipped), or len(s)."""
+    depth, q = 0, None
+    while i < len(s):
+        c = s[i]
+        if q:
+            if c == "\\":
+                i += 1
+            elif c == q:
+                q = None
+        elif c in "\"'":
+            q = c
+        elif c == "\\":
+            i += 1
+        elif c in "([{":
+            if depth == 0 and c in stop:
+                return i
+            depth += 1
+        elif c in ")]}":
+            if depth == 0 and c in stop:
+                return i
+            depth -= 1
+        elif depth == 0 and c in stop:
+            return i
+        i += 1
+    return len(s)
+
+
+def _rules(css):
+    """Split a minified stylesheet into (prelude, body-or-None) at the top level."""
+    out, i = [], 0
+    while i < len(css):
+        j = _scan(css, i, "{;}")
+        prelude = css[i:j].strip()
+        if j >= len(css) or css[j] in ";}":
+            if prelude:
+                out.append((prelude, None))
+            i = j + 1
+            continue
+        k = j + 1 + _scan(css[j + 1:], 0, "}")
+        out.append((prelude, css[j + 1:k]))
+        i = k + 1
+    return out
+
+
+_SEL_NAME = re.compile(r"[.#]-?[A-Za-z_\u00a0-\uffff][\w\-\u00a0-\uffff]*")
+
+
+def _sel_used(sel, names):
+    if "\\" in sel:
+        return True   # escaped identifiers: do not guess
+    bare, depth = [], 0   # drop everything inside (...) and [...]: :not(.x), :has(.x), [for=a.b] prove nothing
+    for c in re.sub(r"\"[^\"]*\"|'[^']*'", "", sel):
+        if c in "([":
+            depth += 1
+        elif c in ")]":
+            depth -= 1
+        elif depth == 0:
+            bare.append(c)
+    return all(m.group(0) in names for m in _SEL_NAME.finditer("".join(bare)))
+
+
+def _split_list(prelude):
+    parts, i = [], 0
+    while i <= len(prelude):
+        j = _scan(prelude, i, ",")
+        parts.append(prelude[i:j])
+        i = j + 1
+    return parts
+
+
+def _prune_rules(css, names):
+    """Kept rules as a tree: str (rule kept as is), ("@", name, text) for @keyframes/@property (decided later from
+    what the kept rules mention), or (prelude, subtree) for @media/@supports."""
+    kept = []
+    for prelude, body in _rules(css):
+        low = prelude.lower()
+        if body is None:
+            kept.append(prelude + ";")
+        elif low.startswith(("@media", "@supports", "@container", "@layer")):
+            inner = _prune_rules(body, names)
+            if inner:
+                kept.append((prelude, inner))
+        elif re.match(r"@(-webkit-)?keyframes\s|@property\s", low):
+            kept.append(("@", prelude.split(None, 1)[1].strip(), f"{prelude}{{{body}}}"))
+        elif prelude.startswith("@"):
+            kept.append(f"{prelude}{{{body}}}")   # @page, @font-face ...: untouched
+        else:
+            sels = [s for s in _split_list(prelude) if _sel_used(s, names)]
+            if sels:
+                kept.append(f"{','.join(sels)}{{{body}}}")
+    return kept
+
+
+def _leaves(tree):
+    for r in tree:
+        if isinstance(r, tuple) and r[0] != "@":
+            yield from _leaves(r[1])
+        else:
+            yield r
+
+
+def _emit(tree, alive):
+    out = []
+    for r in tree:
+        if isinstance(r, str):
+            out.append(r)
+        elif r[0] == "@":
+            if r[1] in alive:
+                out.append(r[2])
+        else:
+            inner = _emit(r[1], alive)
+            if inner:
+                out.append(f"{r[0]}{{{inner}}}")
+    return "".join(out)
+
+
+_WORD = re.compile(r"-?-?[A-Za-z_][\w-]*")
+
+
+def prune_css(css, html_):
+    """Drop rules, @keyframes and @property that `html_` (every diagram that shares this stylesheet) cannot use."""
+    p = _Used()
+    p.feed(html_)
+    tree = _prune_rules(css, p.names)
+    leaves = list(_leaves(tree))
+    said = " ".join([r[r.find("{"):] for r in leaves if isinstance(r, str)] + p.styles)   # declarations, not selectors
+    alive = set(_WORD.findall(said))
+    # a kept @keyframes can use an @property (dd-count animates --dd-n), so add the names its frames mention
+    alive |= set(_WORD.findall(" ".join(r[2] for r in leaves if isinstance(r, tuple) and r[1] in alive)))
+    return _emit(tree, alive)
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1599,17 +1755,18 @@ def main():
     if a.target == "zenn":
         blocks = []
         for (pat, h, st), s in zip(built, specs):
-            block = f"<style>{minify(base_css('zenn') + part_css(pat) + st)}</style>\n{h}"
+            block = f"<style>{prune_css(minify(base_css('zenn') + part_css(pat) + st), h)}</style>\n{h}"
             size = len(block.encode())
             if size > ZENN_MAX_BYTES:
                 print(f"ERROR: {s.get('title', pat)} is {size} bytes (> 50KB Zenn limit)", file=sys.stderr)
                 sys.exit(1)
             blocks.append(f"```html-embed\n{block}\n```")
-            print(f"{pat:13s} {size:6d} bytes")
+            print(f"{pat:13s} {size:6d} bytes {len(block) + 18:6d} chars")   # chars: what Zenn's 80,000 counts (with the fence)
         out.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
     else:
         pats = sorted({p for p, _, _ in built})
-        css = minify(base_css(a.target) + "".join(part_css(p) for p in pats) + "".join(st for _, _, st in built))
+        css = prune_css(minify(base_css(a.target) + "".join(part_css(p) for p in pats) + "".join(st for _, _, st in built)),
+                        "".join(h for _, h, _ in built))   # one stylesheet for the page: keep what any diagram uses
         page_bg = ("body{margin:0;background:#f4f4f5;color:#1f2328}"
                    "[data-theme=dark] body{background:#0d1117}"
                    "@media (prefers-color-scheme:dark){:root:not([data-theme=light]) body{background:#0d1117}}")

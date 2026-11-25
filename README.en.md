@@ -150,6 +150,11 @@ text under 12px, the 500px Zenn height limit, and animation loops fast enough to
 
 ## Notes for Zenn
 
+A Zenn article body is capped at 80,000 characters, and embed blocks count. build.py drops the CSS a diagram
+does not use, so a block is about 8,500–18,000 characters (about 13,000 on average across the ten samples).
+**Plan on about 5 per article**, or 4 if they are all large ones like combo or explorer. The build prints each
+block's size as `chars`.
+
 Zenn documents 640px as its breakpoint. Measured on a live article, the embed is 706px wide on 1440px and
 1280px screens but 591px at 1100px and 515px at 1024px, because the sidebar appears and narrows the article
 column. With a 640px breakpoint, common laptop widths would get the phone layout, so this skill switches at

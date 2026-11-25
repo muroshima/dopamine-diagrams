@@ -19,10 +19,31 @@ Paste each block into the article as is.
 | JavaScript | not executed (`<script>`, `onclick`) | all states are `:checked` / `:hover` |
 | Links, forms | `<a>` is plain text; form controls hidden except checkbox/radio | buttons are `<label for>` |
 | External files | `<link>`, `@import`, web fonts, `<iframe>` not loaded | system fonts, inline SVG |
-| Size | 50KB per block | build.py fails above 50KB; one pattern is ~7–15KB |
+| Size | 50KB per block | build.py fails above 50KB; one pattern is ~9–18KB |
+| Article length | 80,000 characters of body text (embed blocks count) | ~8,500–18,000 characters per block: about 5 per article, 4 if they are all large (see "Article length" below) |
 | Height | 500px shown, the rest scrolls inside | checker fails above 500px in any state |
 | Dark mode | `<html data-theme="dark">` | `[data-theme="dark"] .dd` swaps tokens; OS preference is ignored on purpose |
 | Flashing | banned; Zenn may stop the embed | checker fails loops < 0.5s |
+
+## Article length: ~8,500–18,000 characters per block
+
+A Zenn article body is capped at 80,000 characters, and the contents of `html-embed` blocks count. Most of a
+block is CSS, so for each block build.py drops the rules that need a class or id its HTML does not have, and
+any `@keyframes` and `@property` nothing uses (inside `@media` and `@supports` too). It does not look at the
+pattern; it only matches the output HTML against the CSS, so new classes and effects need no extra work.
+Selectors it cannot decide from the HTML (`:not(...)`, attribute selectors, element-only selectors, `:root`)
+are kept. standalone and slides do the same with the union of every diagram on the page.
+
+Characters per block for the ten samples (2026-11, counting the ```` ``` ```` lines):
+
+| | Smallest | Largest | Average | All ten |
+|---|---|---|---|---|
+| Before pruning | 13,561 | 23,411 | 18,710 | 187,100 |
+| After pruning | 8,741 (decompose) | 17,897 (explorer) | 13,321 | 133,208 |
+
+**Rule of thumb: about 5 per article.** 80,000 / ~13,000 is 6, but the article text needs room too, so plan
+on about 5. If they are all state-heavy diagrams such as combo, explorer and stampcard (~15,000–18,000
+characters), stop at 4. For zenn output build.py prints each block's size as `chars`; add up the blocks you use.
 
 ## Width: use 560px, not 640px, as the breakpoint
 

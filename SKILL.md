@@ -94,4 +94,4 @@ license: MIT
 
 ## 拡張
 
-新しい種類を足すときは、`scripts/build.py` の描画関数（`RENDER` に登録）、`templates/parts/` の CSS、`references/patterns/` と `references/en/patterns/` の説明、`examples/` と `examples/en/` のサンプル spec を用意します。状態のセレクタは図ごとの一意な id で作り（`render_explorer` を参照）、CSS のクラス名は種類ごとの接頭辞を付け、3つの出力先すべてで検査を通してください。
+新しい種類を足すときは、`scripts/build.py` の描画関数（`RENDER` に登録）、`templates/parts/` の CSS、`references/patterns/` と `references/en/patterns/` の説明、`examples/` と `examples/en/` のサンプル spec を用意します。状態のセレクタは図ごとの一意な id で作り（`render_explorer` を参照）、CSS のクラス名は種類ごとの接頭辞を付け、3つの出力先すべてで検査を通してください。build.py は出力した HTML に出てこないクラスや id のルールと、どこからも名前が出てこない `@keyframes` を自動で落とします（`references/targets/zenn.md` の「記事の文字数」）。そのため、使うクラスは HTML の `class` に書き、キーフレームの名前は `animation` か CSS 変数の値として書いてください。

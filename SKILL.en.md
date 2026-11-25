@@ -109,4 +109,7 @@ New pattern = a renderer function in `scripts/build.py` (registered in `RENDER`)
 `templates/parts/`, reference files in `references/patterns/` (Japanese) and `references/en/patterns/`, and example specs in
 `examples/` (Japanese) and `examples/en/`.
 Generate state selectors with the diagram's unique id (see `render_explorer`), keep CSS class names prefixed
-per pattern, then run the checker on all three targets.
+per pattern, then run the checker on all three targets. build.py automatically drops rules for classes and ids
+the output HTML does not contain, and `@keyframes` whose name nothing mentions (see "Article length" in
+`references/en/targets/zenn.md`), so put every class you style in the HTML `class` attribute and name keyframes
+in `animation` or in a CSS variable's value.
