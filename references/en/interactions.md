@@ -7,6 +7,7 @@ the button. CSS reacts with `#id:checked ~ …`.
 |---|---|---|
 | One of N views (tabs, cases) | `radio`, same `name`, first one `checked` | `explorer` |
 | Before / after, show / hide | `checkbox` | `decompose` |
+| Count the ticked ones; tell "all met" and "one left" | N `checkbox`es. The count is a `counter-increment` shown by an element after the inputs; the states are sibling chains `#c0:checked~#c1:not(:checked)~…` | `combo` |
 | Trace one element on hover | none; `svg:has(.n-x:hover) .edge:not(.x-x)` | `architecture` |
 
 ## Rules

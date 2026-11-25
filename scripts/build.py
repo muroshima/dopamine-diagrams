@@ -105,13 +105,19 @@ DEFAULTS = {
            "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
            "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要",
            "goal": "目標", "reached": "到達 ✓", "not_reached": "未達",
-           "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる", "laps": "周回", "lap_n": "{n}周目"},
+           "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる", "laps": "周回", "lap_n": "{n}周目",
+           "combo_prompt": "確かめた条件を押す", "combo_count": "クリア", "combo_reach": "あと1つ！",
+           "combo_full": "そろった！", "combo_last": "残りはこれ", "combo_locked": "全部そろうと結論が出る",
+           "combo_stamp": "確定！"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
            "gem_title": "The one that matters", "before": "Before", "after": "After", "tier1": "Low", "tier2": "Medium", "tier3": "High",
            "tier4": "Critical", "goal": "Goal", "reached": "Reached ✓", "not_reached": "Not yet", "flip": "Flip ▶",
-           "unflip": "Hide", "hidden": "Guess the answer, then flip", "laps": "Laps", "lap_n": "lap {n}"},
+           "unflip": "Hide", "hidden": "Guess the answer, then flip", "laps": "Laps", "lap_n": "lap {n}",
+           "combo_prompt": "Tick each one you have checked", "combo_count": "met", "combo_reach": "One more!",
+           "combo_full": "All set!", "combo_last": "Last one", "combo_locked": "Meet them all to unlock the verdict",
+           "combo_stamp": "Unlocked!"},
 }
 
 
@@ -1192,9 +1198,99 @@ def render_proportion(spec, u, lv):
     return body, css
 
 
+# ---------------------------------------------------------------- combo
+def render_combo(spec, u, lv):
+    """Conditions that only count when all are met: tick them one by one (a rhythm game combo); with one left the
+    meter says "one more" and the missing one is marked (a pachinko reach); all met unlocks the verdict."""
+    need(spec, "title")
+    conds = items_of(spec, "conditions", dict, ("text",), lo=2, hi=6)
+    n = len(conds)
+    res = typed(spec, "result", dict)
+    if not isinstance(res.get("text"), str) or not res["text"].strip():
+        fail(f"combo: result.text must be a non-empty string; got {res.get('text')!r:.40}")
+
+    def word(d, key, default, where, limit, fs=14):
+        v = d.get(key, default)
+        if not isinstance(v, str) or not v.strip():
+            fail(f"combo: {where}{key} must be a non-empty string; got {v!r:.40}")
+        if text_w(v, fs) > limit:
+            print(f"WARN: combo: {where}{key} '{v[:30]}' is long; it may not fit the phone layout", file=sys.stderr)
+        return v
+    prompt = word(spec, "prompt", T(spec, "combo_prompt"), "", 300)
+    count_l = word(spec, "count_label", T(spec, "combo_count"), "", 80, 12)
+    reach = word(spec, "reach_label", T(spec, "combo_reach"), "", 200, 18)
+    full = word(spec, "full_label", T(spec, "combo_full"), "", 200, 18)
+    last = word(spec, "last_label", T(spec, "combo_last"), "", 90, 12)
+    locked = word(spec, "locked_label", T(spec, "combo_locked"), "", 300, 13)
+    stamp = word(res, "stamp", T(spec, "combo_stamp"), "result.", 200, 20)
+    # Rough height of the unlocked state on a 340px phone (one column; about 260px of text per line beside the box).
+    # check.mjs measures the real thing; this only warns early.
+    est = 24 + 32 + 44 + 4 * (n - 1) + (28 if spec.get("note") else 0)
+    est += 34 + 23 + 21 * math.ceil(text_w(res["text"], 14) / 284)
+    for i, c in enumerate(conds):
+        if c.get("tag") is not None:
+            word(c, "tag", "", f"condition {i+1} ", 90, 12)
+        w = text_w(c["text"], 13) + (text_w(c["tag"], 12) + 14 if c.get("tag") else 0)
+        est += max(32, 17.6 * math.ceil(w / 260) + 10)
+    if est > 500:
+        print(f"WARN: combo: the conditions and the verdict are long for {n} conditions; on phones the diagram may pass "
+              f"Zenn's 500px (about {est:.0f}px). Shorten them or use fewer conditions", file=sys.stderr)
+
+    inp = "".join(f'<input class="h cb-in" type="checkbox" id="{u}-c{i}">' for i in range(n))
+    items = "".join(
+        f'<label for="{u}-c{i}" class="cb-i"><span class="cb-box" aria-hidden="true"><span class="cb-no">{i+1}</span>'
+        f'<span class="cb-ok">✓</span></span><span class="cb-tx">'
+        + (f'<span class="cb-tag">{E(c["tag"])}</span>' if c.get("tag") else "")
+        + f'{E(c["text"])}</span><span class="cb-last">{E(last)}</span></label>' for i, c in enumerate(conds))
+    segs = "".join(f'<i class="cb-g{i}"></i>' for i in range(n))
+    body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
+            f'<div class="cb-ls{" cb-1c" if n <= 3 else ""}">{items}</div>'
+            f'<div class="cb-mt"><span class="cb-num"><b class="cb-n"></b><span class="cb-of">/{n}</span>'
+            f'<span class="cb-u">{E(count_l)}</span></span><span class="cb-bar" aria-hidden="true">{segs}</span>'
+            f'<span class="cb-say" role="status" aria-live="polite"><span class="cb-s0">{E(prompt)}</span><span class="cb-s1 gold">{E(reach)}</span>'
+            f'<span class="cb-s2 gold">{E(full)}</span></span></div>'
+            f'<div class="cb-out"><div class="cb-lock"><span aria-hidden="true">🔒 </span>{E(locked)}</div>'
+            f'<div class="cb-win rb"><div class="in"><b class="cb-stamp gold">{E(stamp)}</b>'
+            f'<span class="cb-rt">{E(res["text"])}</span></div></div></div>')
+    neon = "box-shadow:0 0 0 2px var(--a)" if lv == 1 else "animation:dd-neon var(--pulse) ease-in-out infinite"
+    glow = "" if lv == 1 else "box-shadow:0 0 10px rgba(34,197,94,.35);"
+    pulse = "" if lv == 1 else ",dd-goldpulse 1.8s ease-in-out 1s infinite"
+    on_seg = "background:var(--g)" if lv == 1 else "background:linear-gradient(180deg,#4ade80,#15803d)"
+    # The counter: every ticked input adds one. .cb-n comes after the inputs in the document, so it sees the total
+    css = [f"#{u}{{counter-reset:dd-cb}}#{u}>.cb-in:checked{{counter-increment:dd-cb}}"]
+    for i in range(n):
+        sel = f"#{u}-c{i}:checked"
+        lab = f"label[for={u}-c{i}]"
+        css.append(f"{sel}~.cb-ls {lab}{{border-style:solid;border-color:var(--g);background:var(--gs);{glow}}}"
+                   f"{sel}~.cb-ls {lab} .cb-box{{background:var(--g);border-color:var(--g);color:var(--card)}}"
+                   f"{sel}~.cb-ls {lab} .cb-no{{display:none}}"
+                   f"{sel}~.cb-ls {lab} .cb-ok{{display:inline;animation:var(--enter) .4s ease-out both}}"
+                   f"{sel}~.cb-mt .cb-g{i}{{order:0;{on_seg}}}"   # ticked segments gather on the left: the bar grows
+                   f"#{u}-c{i}:focus-visible~.cb-ls {lab}{{outline:2px solid var(--b);outline-offset:2px}}")
+        # reach: every input but this one is ticked (a chain of siblings, so no :has() is needed)
+        chain = "~".join(f"#{u}-c{k}" + (":not(:checked)" if k == i else ":checked") for k in range(n))
+        css.append(f"{chain}~.cb-ls {lab}{{border-color:var(--a);{neon}}}"
+                   f"{chain}~.cb-ls {lab} .cb-last{{display:inline-block;animation:pop .35s ease both}}"
+                   f"{chain}~.cb-mt .cb-s0{{display:none}}"
+                   f"{chain}~.cb-mt .cb-s1{{display:inline-block;animation:var(--enter) .5s ease-out both{pulse}}}")
+    allc = "~".join(f"#{u}-c{k}:checked" for k in range(n))
+    css.append(f"{allc}~.cb-mt .cb-s0{{display:none}}{allc}~.cb-mt .cb-n{{color:var(--g)}}"
+               f"{allc}~.cb-mt .cb-s2{{display:inline-block;animation:var(--enter) .5s ease-out both{pulse}}}"
+               f"{allc}~.cb-out .cb-lock{{display:none}}"
+               f"{allc}~.cb-out .cb-win{{display:block;animation:var(--enter) .55s ease-out .15s both}}"
+               f"{allc}~.cb-out .cb-stamp{{animation:var(--enter) .6s ease-out .45s both{pulse}}}")
+    # PDF has no clicks: print every condition met and the verdict
+    css.append(f"@media print{{#{u} .cb-i{{border-style:solid!important;border-color:var(--g)!important;box-shadow:none!important}}"
+               f"#{u} .cb-box{{background:var(--g);border-color:var(--g);color:var(--card)}}"
+               f"#{u} .cb-no,#{u} .cb-last,#{u} .cb-s0,#{u} .cb-s1,#{u} .cb-lock{{display:none!important}}"
+               f"#{u} .cb-ok,#{u} .cb-s2{{display:inline-block!important}}#{u} .cb-win{{display:block!important}}"
+               f"#{u} .cb-n::before{{content:\"{n}\"}}#{u} .cb-bar i{{{on_seg}}}}}")
+    return body, "".join(css)
+
+
 RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architecture": render_architecture,
           "compare": render_compare, "loop": render_loop, "flow": render_flow, "ladder": render_ladder,
-          "proportion": render_proportion}
+          "proportion": render_proportion, "combo": render_combo}
 
 
 # ---------------------------------------------------------------- assembly

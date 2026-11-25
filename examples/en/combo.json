@@ -1,0 +1,13 @@
+{
+  "pattern": "combo",
+  "title": "Can we ship today? Five conditions",
+  "conditions": [
+    {"tag": "CI", "text": "Every test on main passes"},
+    {"tag": "Review", "text": "Two or more people approved"},
+    {"tag": "Migration", "text": "The DB migration ran on a staging copy"},
+    {"tag": "Rollback", "text": "The rollback steps are written and tried"},
+    {"tag": "Support", "text": "Support knows what changes"}
+  ],
+  "result": {"stamp": "Ship it", "text": "Tag and deploy. If even one is missing, wait until tomorrow"},
+  "note": "Example content for the combo pattern"
+}

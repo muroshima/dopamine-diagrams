@@ -1,0 +1,51 @@
+/* combo: tick conditions one by one; a CSS counter shows "3/5", one left says "one more" and marks the missing one,
+   all met unlocks the verdict. State selectors (#uid-cN:checked ...) and the counter scope come from build.py. */
+.dd .cb-ls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.dd .cb-ls.cb-1c{grid-template-columns:1fr}
+.dd .cb-i{cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:10px;background:var(--card);
+  border:2px dashed var(--mut);font-size:13px;line-height:1.4;transition:transform .15s}
+.dd .cb-i:hover{transform:translateY(-2px)}
+.dd .cb-box{flex:none;width:26px;height:26px;border-radius:7px;border:2px solid var(--mut);display:flex;align-items:center;
+  justify-content:center;font-weight:900;font-size:13px;color:var(--mut)}
+.dd .cb-ok,.dd .cb-last,.dd .cb-s1,.dd .cb-s2,.dd .cb-win{display:none}
+.dd .cb-tx{flex:1;min-width:0;overflow-wrap:anywhere}
+.dd .cb-tag{display:inline-block;font-size:12px;font-weight:800;color:var(--bt);background:var(--bs);border-radius:4px;
+  padding:0 5px;margin-right:6px;white-space:nowrap;line-height:1.5}
+.dd .cb-i{position:relative}
+/* a tag on the top edge of the missing condition: it adds no height, so nothing below jumps. White on #9a3412 is 7:1 */
+.dd .cb-last{position:absolute;right:8px;top:-10px;font-size:12px;font-weight:800;line-height:1.4;color:#fff;
+  background:#9a3412;border-radius:999px;padding:0 8px;white-space:nowrap}
+/* the meter: number, a bar whose ticked segments gather on the left (flex order), and what to do next */
+.dd .cb-mt{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;margin:10px 0}
+.dd .cb-num{white-space:nowrap;font-weight:900}
+.dd .cb-n{font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.dd .cb-n::before{content:counter(dd-cb)}
+.dd .cb-of{font-size:16px;color:var(--mut);margin:0 6px 0 2px}
+.dd .cb-u{font-size:12px;color:var(--mut)}
+.dd .cb-bar{flex:1 1 90px;display:flex;gap:3px;height:12px;min-width:90px}
+.dd .cb-bar i{flex:1;order:1;border-radius:3px;background:var(--line);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.dd .cb-say{flex:0 1 auto;font-weight:800;font-size:14px}
+.dd .cb-s0{color:var(--mut)}
+.dd .cb-s1,.dd .cb-s2{font-size:18px;line-height:1.3}
+/* the verdict: locked until every condition is met */
+.dd .cb-lock{border:2px dashed var(--mut);border-radius:12px;padding:10px 12px;color:var(--mut);font-weight:700;font-size:13px;
+  text-align:center}
+.dd .cb-win{border-radius:12px}
+.dd .cb-win .in{padding:8px 14px;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 10px}
+.dd .cb-stamp{font-size:20px;display:inline-block;line-height:1.3}
+.dd .cb-rt{font-size:14px;font-weight:800}
+/* lv1 turns gold into --a, which is under 4.5:1 on the light background at this size: use the dark amber instead */
+.dd.lv1 .cb-say .gold,.dd.lv1 .cb-stamp{color:var(--yt)!important}
+@media (max-width:560px){
+  .dd{padding:12px}
+  .dd .ttl{font-size:14px}
+  .dd .cb-ls{grid-template-columns:1fr;gap:4px}
+  .dd .cb-i{padding:3px 8px;gap:6px;line-height:1.35}
+  .dd .cb-box{width:24px;height:24px}
+  .dd .cb-mt{margin:8px 0;gap:2px 10px}
+  .dd .cb-n{font-size:24px}
+  .dd .cb-bar{flex-basis:60px;min-width:60px}
+  .dd .cb-lock{padding:8px 10px}
+  .dd .cb-win .in{padding:6px 10px}
+  .dd .cb-stamp{font-size:18px}
+}

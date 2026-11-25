@@ -18,7 +18,7 @@ Pure HTML + CSS. One JSON spec builds to:
 
 ## Patterns
 
-Eight of them. Every image below is a sample from [examples/en/](examples/en/) at Zenn's article width (706px).
+Nine of them. Every image below is a sample from [examples/en/](examples/en/) at Zenn's article width (706px).
 The Japanese samples are in [examples/](examples/).
 
 ### architecture: components in tiers, and how a request flows
@@ -66,6 +66,13 @@ Pick your level: the levels below light up one by one with a ✓, and the next m
 One click fades 99 dots and lights up the one that matters.
 
 <img src="docs/en/proportion.png" alt="Proportion: 99 of 100 dots fade and one glows gold, next to the gold heading 'The one that matters'">
+
+### combo: conditions that only count when all are met
+
+Tick the conditions one by one. The count grows ("3/5"), one left says "One more!", and when all are met the
+verdict stamps in.
+
+<img src="docs/en/combo.png" alt="Combo: all five release conditions ticked, the '5/5 met' bar full and the gold 'All set!'; below, a rainbow border with the 'Ship it' stamp and the verdict">
 
 ## Phones and slides
 
