@@ -18,7 +18,7 @@ Pure HTML + CSS. One JSON spec builds to:
 
 ## Patterns
 
-Nine of them. Every image below is a sample from [examples/en/](examples/en/) at Zenn's article width (706px).
+Ten of them. Every image below is a sample from [examples/en/](examples/en/) at Zenn's article width (706px).
 The Japanese samples are in [examples/](examples/).
 
 ### architecture: components in tiers, and how a request flows
@@ -73,6 +73,12 @@ Tick the conditions one by one. The count grows ("3/5"), one left says "One more
 verdict stamps in.
 
 <img src="docs/en/combo.png" alt="Combo: all five release conditions ticked, the '5/5 met' bar full and the gold 'All set!'; below, a rainbow border with the 'Ship it' stamp and the verdict">
+
+### stampcard: show the reward at the end up front
+
+Like a mobile game's login bonus, every square and the big gold reward at the end are shown up front. Pick a square to stamp it "Done" and read what that week is for.
+
+<img src="docs/en/stampcard.png" alt="Stampcard: squares Week 1 to Week 6 carry a 'Done' stamp and a check mark; on the right, Week 7 in a rainbow border with the gold 'Ship on Fridays' and a big 'Done' stamp; Week 7's detail below">
 
 ## Phones and slides
 
