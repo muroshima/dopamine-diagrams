@@ -436,25 +436,39 @@ def _arch_svg(spec, u, mode, focal):
                     print(f"WARN: architecture edge {e['from']}->{e['to']} runs under node '{nid}' in the {mode} layout; "
                           f"connect neighbouring tiers or put fewer nodes in between", file=sys.stderr)
                     break
-        dense = [[_bez(*sg, k / 60) for sg in r[3] for k in range(61)] for r in routes]
+        dense = pts_of
 
         def seg_dist(px, py, ax, ay, bx, by):
             dx, dy = bx - ax, by - ay
             L = dx * dx + dy * dy
             t = 0 if L == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / L))
             return math.hypot(px - ax - t * dx, py - ay - t * dy)
+        grids = []
+        for B in dense:   # 10-unit cells -> indices of the segments touching them
+            g = {}
+            for k in range(len(B) - 1):
+                (x0, y0), (x1, y1) = B[k], B[k + 1]
+                for gx in range(int(min(x0, x1) // 10), int(max(x0, x1) // 10) + 1):
+                    for gy in range(int(min(y0, y1) // 10), int(max(y0, y1) // 10) + 1):
+                        g.setdefault((gx, gy), []).append(k)
+            grids.append(g)
+
+        def by_node(pt, nid):   # within 18 units of the node's box
+            cx, cy, w, h, _ = pos[nid]
+            return abs(pt[0] - cx) <= w / 2 + 18 and abs(pt[1] - cy) <= h / 2 + 18
         for ri in range(len(routes)):
             for rj in range(ri + 1, len(routes)):
                 ei, ej = routes[ri][0], routes[rj][0]
                 A, B = dense[ri], dense[rj]
-                bx0, by0 = min(q[0] for q in B) - 6, min(q[1] for q in B) - 6
-                bx1, by1 = max(q[0] for q in B) + 6, max(q[1] for q in B) + 6
-                near = [bx0 < x < bx1 and by0 < y < by1 and
-                        min(seg_dist(x, y, *B[k], *B[k + 1]) for k in range(len(B) - 1)) < 5 for x, y in A]
+                grid = grids[rj]
+                near = []
+                for x, y in A:
+                    gx, gy = int(x // 10), int(y // 10)
+                    ks = {k for dx in (-1, 0, 1) for dy in (-1, 0, 1) for k in grid.get((gx + dx, gy + dy), ())}
+                    near.append(any(seg_dist(x, y, *B[k], *B[k + 1]) < 5 for k in ks))
                 # stretches where the two lines are within a stroke of each other; one that starts or ends at a node
                 # both lines share is a fan-out (a line splitting towards two nodes) and reads correctly
-                shared_start = ei["from"] in (ej["from"], ej["to"])
-                shared_end = ei["to"] in (ej["from"], ej["to"])
+                shared = {ei["from"], ei["to"]} & {ej["from"], ej["to"]}
                 run, longest, start = 0, 0, None
                 for k, flag in enumerate(near + [False]):
                     if flag:
@@ -463,7 +477,7 @@ def _arch_svg(spec, u, mode, focal):
                         run += 1
                         continue
                     if run:
-                        touches = (start == 0 and shared_start) or (k == len(near) and shared_end)
+                        touches = any(by_node(A[start], n) or by_node(A[min(k, len(A)) - 1], n) for n in shared)
                         if not touches:
                             seg_len = sum(math.dist(A[m], A[m + 1]) for m in range(start, min(k, len(A) - 1)))
                             longest = max(longest, seg_len)
@@ -560,7 +574,7 @@ def _arch_svg(spec, u, mode, focal):
         curves.extend(segs)
         routes.append((e, a, b, segs))
     # labels after every route is known, so a label can keep clear of nodes, other labels and other lines
-    pts_of = [[_bez(*sg, k / 24) for sg in segs for k in range(25)] for _, _, _, segs in routes]
+    pts_of = [[_bez(*sg, k / 60) for sg in segs for k in range(61)] for _, _, _, segs in routes]
     for ri, (e, a, b, segs) in enumerate(routes):
         d = f"M{segs[0][0][0]:.1f} {segs[0][0][1]:.1f}" + "".join(
             f" C{p1[0]:.1f} {p1[1]:.1f},{p2[0]:.1f} {p2[1]:.1f},{p3[0]:.1f} {p3[1]:.1f}" for _, p1, p2, p3 in segs)
@@ -605,6 +619,10 @@ def _arch_svg(spec, u, mode, focal):
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
     H += extra_h
+    if mode == "wide":
+        far = max((x for sg in curves for k in range(13) for x in [_bez(*sg, k / 12)[0]]), default=0)
+        if far > W - 4:
+            W = far + 8
     self_check(routes, pts_of)
     if mode != "wide":
         # Tier names sit on the top edge of their band, preferably where no edge passes (they are drawn over the
