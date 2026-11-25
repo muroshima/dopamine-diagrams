@@ -356,7 +356,7 @@ def _arch_svg(spec, u, mode, focal):
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
     eds, curves, lrects, routes = [], [], [], []
-    extra_h, lanes = 0, {}
+    extra_h, lanes, apex = 0, {}, {}
 
     def bulged(e):
         return tid[e["from"]] == tid[e["to"]] and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)
@@ -386,7 +386,9 @@ def _arch_svg(spec, u, mode, focal):
                 side = 1 if (a[4] < T - 1 or T == 1) else -1
                 k = brank[ei]
                 edge_x = band_x[a[4]][1] if side > 0 else band_x[a[4]][0]
-                g = edge_x + side * (max(14, lwid / 2 + 10) + 10 * k)
+                off = max(14, lwid / 2 + 10, apex.get((a[4], side), 0) + 10)
+                apex[(a[4], side)] = off
+                g = edge_x + side * off
                 # off the side centre (where tier-to-tier lines leave), and apart for each nested bulge
                 dy = min(a[3] / 2 - 4, a[3] * (.22 + .1 * k)) * (1 if b[1] > a[1] else -1)
                 segs = [bulge((a[0] + side * a[2] / 2, a[1] + dy), (b[0] + side * b[2] / 2, b[1] - dy), 0, g)]
@@ -413,17 +415,15 @@ def _arch_svg(spec, u, mode, focal):
                 p0 = (a[0] + (a[2]/2 if right else -a[2]/2), a[1]); p3 = (b[0] - (b[2]/2 if right else -b[2]/2), b[1])
                 segs = [hseg(p0, p3)]
             elif same:   # swing below the row into the gap (a second one above it); the last row gets extra room
-                k = brank[ei]
-                up = a[4] > 0 and k % 2 == 1               # first row: always below
-                level = k // 2 if a[4] > 0 else k
+                # Always the gap below the row: the row below never uses it for its own bulges, so they cannot meet.
+                level = brank[ei]
                 depth = 8 + 7 * level
-                if depth > rowgap - 4:
+                if depth > rowgap - 4 and a[4] < T - 1:
                     print(f"WARN: architecture tier '{tiers[a[4]]['name']}' has too many same-tier edges for the phone "
-                          f"layout; they will overlap. Connect fewer nodes inside the tier", file=sys.stderr)
-                top_y = band_top[a[4]]
-                side = -1 if up else 1
-                g = top_y + bh + depth if side > 0 else top_y - depth
-                if side > 0 and a[4] == T - 1:
+                          f"layout; they will overlap the next row. Connect fewer nodes inside the tier", file=sys.stderr)
+                side = 1
+                g = band_top[a[4]] + bh + depth
+                if a[4] == T - 1:
                     extra_h = max(extra_h, depth + 12)
                 # off the bottom centre (where row-to-row lines leave), and apart for each nested bulge
                 dx = min(a[2] / 2 - 4, a[2] * (.22 + .1 * level)) * (1 if b[0] > a[0] else -1)
