@@ -105,13 +105,13 @@ DEFAULTS = {
            "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
            "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要",
            "goal": "目標", "reached": "到達 ✓", "not_reached": "未達",
-           "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる"},
+           "flip": "めくる ▶", "unflip": "伏せる", "hidden": "答えを予想してからめくる", "laps": "周回", "lap_n": "{n}周目"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
            "gem_title": "The one that matters", "before": "Before", "after": "After", "tier1": "Low", "tier2": "Medium", "tier3": "High",
            "tier4": "Critical", "goal": "Goal", "reached": "Reached ✓", "not_reached": "Not yet", "flip": "Flip ▶",
-           "unflip": "Hide", "hidden": "Guess the answer, then flip"},
+           "unflip": "Hide", "hidden": "Guess the answer, then flip", "laps": "Laps", "lap_n": "lap {n}"},
 }
 
 
@@ -986,10 +986,54 @@ def render_loop(spec, u, lv):
     ct = (f'<text x="{cx}" y="{cy+2}" class="lp-ct" style="fill:url(#{gid})">{E(center.get("text", ""))}</text>'
           f'<text x="{cx}" y="{cy+24}" class="lp-cs">{E(center.get("sub", ""))}</text>') if center else ""
     aria = E(spec.get("alt", f'{spec["title"]}: ' + " → ".join(steps)))
+    laps = lap_badges(spec)
     svg = (f'<svg class="lp-svg" viewBox="0 0 400 {H}" role="img" aria-label="{aria}">{defs}{top}'
            f'<circle cx="{cx}" cy="{cy}" r="{R}" class="lp-ring"/><circle cx="{cx}" cy="{cy}" r="{R}" class="lp-flow"/>'
            f'{tris}{nodes}{ct}</svg>')
-    return f'<div class="ttl">{E(spec["title"])}</div>{svg}', ""
+    ttl = f'<div class="ttl">{E(spec["title"])}</div>'
+    if laps:   # beside the title, never on the ring: the SVG stays as it was and the height does not grow on wide screens
+        ttl = f'<div class="lp-hd">{ttl}{laps}</div>'
+    return f'{ttl}{svg}', ""
+
+
+def lap_badges(spec):
+    """spec["laps"]: lap badges that stack up once each (×2, ×3, ...), like a pachinko pseudo-sequence where more laps
+    mean better odds. An integer N gives ×2 to ×N; a list gives its own words. No loop: they stamp in 0.8s apart and stay."""
+    v = spec.get("laps")
+    if v is None:
+        return ""
+    if isinstance(v, bool) or not isinstance(v, (int, list)):
+        fail(f"loop: laps must be an integer 2 to 5 or a list of 1 to 4 strings; got {v!r:.40}")
+    if isinstance(v, int):
+        if not 2 <= v <= 5:
+            fail(f"loop: laps as a number must be 2 to 5 (badges ×2 to ×N); got {v}")
+        labs = [f"×{k}" for k in range(2, v + 1)]
+        spoken = [T(spec, "lap_n").format(n=k) for k in range(2, v + 1)]   # "×2" may be read as "times two"
+    else:
+        if not 1 <= len(v) <= 4:
+            fail(f"loop: laps needs 1 to 4 badges; got {len(v)}")
+        for it in v:
+            if not isinstance(it, str) or not it.strip():
+                fail(f"loop: every item of laps must be a non-empty string; got {it!r:.40}")
+            if text_w(it, 20) > 70:
+                print(f"WARN: loop: lap badge '{it[:20]}' is long; keep it to a count like ×2", file=sys.stderr)
+        labs = spoken = v
+    # 308px is the diagram's inner width on a 340px phone; badges plus 6px gaps beyond that break into two rows
+    if sum(text_w(t, 14 + 2 * k) + 22 + 6 for k, t in enumerate(labs)) > 308:
+        print("WARN: loop: the lap badges together do not fit one row on phones; use fewer or shorter badges", file=sys.stderr)
+    # the title and the badges share one line on PC widths (529px embed minus 32px padding); if they do not fit, the
+    # badges wrap and push the ring down, past Zenn's 500px
+    lab_w = text_w(T(spec, "laps"), 12) + 8
+    if text_w(spec.get("title", ""), 16) + 12 + lab_w + sum(text_w(t, 14 + 2 * k) + 22 + 6 for k, t in enumerate(labs)) > 497:
+        print("WARN: loop: the title and the lap badges do not fit one line on PC widths, so the diagram may exceed "
+              "Zenn's 500px; shorten the title or use fewer badges", file=sys.stderr)
+    n = len(labs)
+    # each later badge is a size larger (14px, 16px, ...), so "more laps, better" reads from size and number together
+    tags = "".join(f'<span class="lp-lap{" lp-lmax" if k == n - 1 else ""}" style="font-size:{14 + 2 * k}px;'
+                   f'animation-delay:{.6 + .8 * k:.1f}s" aria-hidden="true">{E(t)}</span>' for k, t in enumerate(labs))
+    # a visible "laps" label ties the badges to the loop; the spoken text says "lap 2, lap 3"
+    return (f'<div class="lp-laps"><span class="lp-lk" aria-hidden="true">{E(T(spec, "laps"))}</span>{tags}'
+            f'<span class="sr">{E(T(spec, "laps"))}: {E(", ".join(spoken))}</span></div>')
 
 
 # ---------------------------------------------------------------- flow

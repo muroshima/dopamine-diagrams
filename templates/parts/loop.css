@@ -26,3 +26,16 @@
 @media (max-width:560px){.dd .ttl{font-size:14px}}
 /* gradient-filled SVG text prints as a solid box in Chrome PDFs */
 @media print{.dd .lp-goal text,.dd .lp-ct{fill:#c2410c!important;stroke:none}}
+/* lap badges (spec laps) beside the title: stamp in once each, 0.8s apart, and stay. No loop, so the ring light stays
+   the only repeating motion. Off the SVG, so they never cover the goal, the steps or the centre words */
+.dd .lp-hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:10px}
+.dd .lp-hd .ttl{margin-bottom:0}
+.dd .lp-laps{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-left:auto}
+.dd .lp-lk{font-size:12px;font-weight:800;color:var(--mut)}
+.dd .lp-lap{display:inline-block;line-height:1.25;padding:1px 9px;border-radius:8px;font-weight:900;white-space:nowrap;color:#fff;
+  background:linear-gradient(180deg,#c2410c,#9a3412);border:2px solid #fbbf24;box-shadow:0 2px 0 #7c2d12;
+  text-shadow:0 1px 0 rgba(0,0,0,.3);animation:var(--enter) .5s ease-out both}   /* white on #c2410c 5.2:1, on #9a3412 7.3:1 */
+.dd .lp-lmax{box-shadow:0 2px 0 #7c2d12,0 0 12px var(--glow)}   /* the latest lap glows, statically */
+.dd.lv1 .lp-lap{background:#9a3412;border-color:#9a3412;box-shadow:none;text-shadow:none}
+/* without background graphics white text would vanish: print dark text in an outline */
+@media print{.dd .lp-lap{background:none!important;color:#9a3412;border-color:#9a3412;box-shadow:none;text-shadow:none}}

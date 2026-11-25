@@ -45,7 +45,7 @@ Click to flip "before" into "after".
 
 ### loop: a cycle that repeats, and when to restart from the goal
 
-Light runs round the ring. The dotted arrow is the way back when the goal changes.
+Light runs round the ring. The dotted arrow is the way back when the goal changes. The "×2" "×3" lap badges at the top right say each lap makes it better.
 
 <img src="docs/en/loop.png" alt="Loop: from the Goal box, Elicit, Specify, Build, Operate and Feedback form a ring with a gold 'Again' in the middle">
 
