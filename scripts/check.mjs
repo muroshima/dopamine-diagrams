@@ -100,6 +100,23 @@ const PROBE = () => {
       if (tb.left < rb.left - 1 || tb.right > rb.right + 1) { clipped.push(`${r.id} «${tx.textContent.slice(0, 24)}» wider than its node`); break; }
     }
   }
+  // Architecture tier names: inside their band, and no edge running through the text (user units of the SVG)
+  for (const r of roots) for (const svg of r.querySelectorAll("svg.ar-svg")) {
+    if (!svg.getClientRects().length) continue;
+    const bands = [...svg.querySelectorAll("rect.ar-band")].map((b) => b.getBBox());
+    const paths = [...svg.querySelectorAll("path.ar-base")];
+    for (const t of svg.querySelectorAll("text.ar-tier")) {
+      const tb = t.getBBox();
+      const band = bands.find((b) => tb.y >= b.y - 2 && tb.y + tb.height <= b.y + b.height + 2 && tb.x < b.x + b.width && tb.x + tb.width > b.x);
+      const name = `${r.id} tier «${t.textContent.slice(0, 24)}»`;
+      if (!band || tb.x < band.x - 1 || tb.x + tb.width > band.x + band.width + 1) { clipped.push(`${name} outside its band`); continue; }
+      const crossed = paths.some((pth) => { const L = pth.getTotalLength();
+        for (let i = 0; i <= 200; i++) { const q = pth.getPointAtLength(L * i / 200);
+          if (q.x > tb.x + 1 && q.x < tb.x + tb.width - 1 && q.y > tb.y + 2 && q.y < tb.y + tb.height - 2) return true; }
+        return false; });
+      if (crossed) clipped.push(`${name} crossed by an edge`);
+    }
+  }
   const out = { clipped, h: roots.length ? Math.ceil(Math.max(...roots.map((r) => r.getBoundingClientRect().bottom + window.scrollY))) : document.documentElement.scrollHeight, overflowX: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
     minFont: 99, minFontAt: "", wrapped: [], fastLoops: [], slides: [] };
   for (const el of document.querySelectorAll("body *")) {

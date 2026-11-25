@@ -26,7 +26,7 @@
 | `cases[].situation` | いいえ | パネルの見出し。既定は `label` |
 | `cases[].bad` | いいえ | 取り消し線付きで表示。作った例なら `note` にそう書く |
 | `cases[].good` | はい | 答え。1文で |
-| `bad_label`, `good_label` | いいえ | 既定は spec に日本語が含まれていれば「よくある間違い」「こうする」、そうでなければ "Common mistake"、"Do this instead" |
+| `bad_label`, `good_label` | いいえ | 既定は spec がひらがなかカタカナを含むか `"lang": "ja"` なら「よくある間違い」「こうする」、そうでなければ "Common mistake"、"Do this instead"（SKILL.md の `lang` を参照） |
 
 ## 上限
 

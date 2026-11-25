@@ -79,7 +79,20 @@ def text_w(s, fs):
     return sum(fs if ord(c) > 0x2E7F else fs * 0.6 for c in str(s))
 
 
-# Default UI words. Japanese when the spec contains Japanese text, English otherwise.
+def tier_w(s, fs):
+    """Upper bound for a tier name (.ar-tier is weight 800 with .04em tracking; bold capitals run ~0.8em, W/M ~1.05em)."""
+    def one(c):
+        if ord(c) > 0x2E7F:
+            return 1.0
+        if c in "MW@%&":
+            return 1.1
+        if c.isupper() or c.isdigit():
+            return 0.8
+        return 0.32 if c == " " else 0.62
+    return sum((one(c) + .04) * fs for c in str(s))
+
+
+# Default UI words: spec["lang"] if given, else Japanese when any text has kana, else English (see spec_lang).
 DEFAULTS = {
     "ja": {"bad_label": "よくある間違い", "good_label": "こうする", "done": "完了！", "decompose_button": "分解する ▶",
            "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
@@ -96,10 +109,12 @@ def spec_lang(spec):
     """"lang" in the spec wins; otherwise Japanese when any text has kana (kanji alone could be Chinese or a place name)."""
     lang = spec.get("lang")
     if lang is not None:
-        if lang not in DEFAULTS:
+        if not isinstance(lang, str) or lang not in DEFAULTS:
             fail(f"lang must be one of {sorted(DEFAULTS)}; got {lang!r:.40}")
         return lang
-    return "ja" if re.search(r"[぀-ヿ]", json.dumps(spec, ensure_ascii=False)) else "en"
+    # hiragana, katakana (without the middle dot U+30FB, common in non-Japanese text too), half-width katakana
+    return "ja" if re.search(r"[\u3041-\u309f\u30a0-\u30fa\u30fc-\u30ff\uff66-\uff9f]",
+                             json.dumps(spec, ensure_ascii=False)) else "en"
 
 
 def T(spec, key):
@@ -189,7 +204,8 @@ def _arch_svg(spec, u, mode, focal):
         W, top, gap, MINW, NARROWEST = 600, 40, 18, 600, 529
         FS, FSS, FSE = 16, 14, 14
         for _ in range(4):
-            colw = [max(max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]) for t in tiers]
+            colw = [max([tier_w(t["name"], FSS) + 4] + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20)
+                                                       for n in t["nodes"]]) for t in tiers]
             gaps = []
             for ti in range(T - 1):
                 labs = [text_w(e["label"], FSE) + 18 for e in edges
@@ -218,7 +234,7 @@ def _arch_svg(spec, u, mode, focal):
             if ti < T - 1:
                 x += bw + gaps[ti] + extra
     else:
-        # Tiers become rows. Each row is a band with its name at the top-left, so edges never cross the name.
+        # Tiers become rows. Each row is a band with its name along the top edge, where no edge crosses it.
         W = 320
         FS, FSS, FSE = 15, 13, 13
         nh = 48 if any(n.get("sub") for t in tiers for n in t["nodes"]) else 34
@@ -287,20 +303,27 @@ def _arch_svg(spec, u, mode, focal):
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
     if mode != "wide":
-        # Tier names sit at the top of their band, at the leftmost spot no edge crosses (long Japanese names
-        # reach the first node's column, where edges usually enter).
+        # Tier names sit on the top edge of their band, at the leftmost x (inside 12..W-12) that no edge crosses.
+        # Long Japanese names reach the first node's column, where edges usually enter.
         for name, by in names:
-            nw = text_w(name, FSS) * 1.04 + 6
-            xs = [x for p0, p1, p2, p3 in curves for t in [i / 40 for i in range(41)]
+            nw = tier_w(name, FSS)
+            if nw > W - 24:
+                print(f"WARN: architecture tier name '{name}' is too long for the phone layout "
+                      f"(~{nw:.0f}px, room for {W - 24}px); shorten it", file=sys.stderr)
+                out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+                continue
+            xs = [x for p0, p1, p2, p3 in curves for t in [i / 80 for i in range(81)]
                   for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
-            # first free slot scanning from the left, then the right corner; edges keep 6px clear of the name
             cands = [12 + 4 * k for k in range(int((W - 24 - nw) // 4) + 1)] + [W - 12 - nw]
             free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)]
             if not free:
-                print(f"WARN: architecture tier '{name}' has edges crossing its name on the phone layout; "
-                      f"shorten the tier name", file=sys.stderr)
+                print(f"WARN: architecture tier '{name}': edges cross its name on the phone layout wherever it goes; "
+                      f"shorten the name or route fewer edges into this tier", file=sys.stderr)
             x0 = free[0] if free else 12
-            out.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+            if x0 == cands[-1] and x0 > 12:   # right corner: anchor at the end so a wider-than-estimated name grows left
+                out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
+            else:
+                out.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():
@@ -595,6 +618,7 @@ RENDER = {"explorer": render_explorer, "decompose": render_decompose, "architect
 def build_one(spec, idx, intensity, target):
     if not isinstance(spec, dict):
         fail(f"spec #{idx + 1} must be a JSON object with a 'pattern' field; got {type(spec).__name__}")
+    spec_lang(spec)   # validate "lang" for every pattern, not only those with default words
     pat = spec.get("pattern")
     if pat not in RENDER:
         raise SystemExit(f"unknown pattern: {pat} (known: {', '.join(RENDER)})")
@@ -626,9 +650,6 @@ def minify(css):
     return re.sub(r"\s*([{};:,>])\s*", r"\1", css).strip()
 
 
-def has_cjk(s):
-    return bool(re.search(r"[぀-ヿ㐀-鿿]", s))
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -645,7 +666,7 @@ def main():
         except (OSError, json.JSONDecodeError) as e:
             fail(f"{f}: {e}")
     built = [build_one(s, i, a.intensity, a.target) for i, s in enumerate(specs)]
-    lang = "ja" if has_cjk(json.dumps(specs, ensure_ascii=False)) else "en"
+    lang = "ja" if any(spec_lang(s) == "ja" for s in specs) else "en"
     out = pathlib.Path(a.out)
 
     if a.target == "zenn":
