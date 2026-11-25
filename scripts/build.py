@@ -84,8 +84,10 @@ def tier_w(s, fs):
     It is a guess: build.py warns from it, check.mjs measures the real text."""
     def one(c):
         o = ord(c)
-        if o >= 0x1F000:              # emoji
+        if o >= 0x1F000 or 0x2600 <= o <= 0x27BF:   # emoji
             return 1.3
+        if 0xFF61 <= o <= 0xFF9F:     # half-width katakana
+            return 0.55
         if o >= 0x2000:               # CJK, and symbols (arrows, boxes, dashes) that Japanese fonts draw full width
             return 1.0
         if c in "MWmw@%&":
@@ -206,31 +208,48 @@ def _arch_svg(spec, u, mode, focal):
         # If that needs more than 600 user units, the viewBox widens and every font grows with it, so text
         # still renders >= 12px when the embed is only 529px wide (Zenn PC at ~561px). Iterate to settle.
         W, top, gap, MINW, NARROWEST = 600, 40, 18, 600, 529
-        FS, FSS, FSE = 16, 14, 14
-        for _ in range(4):
-            colw = [max(max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]) for t in tiers]
+
+        def measure(FS, FSS, FSE, with_names):
+            colw = [max([tier_w(t["name"], FSS) + 4 if with_names else 0]
+                        + [max(text_w(n["label"], FS) + 28, text_w(n.get("sub", ""), FSS) + 20) for n in t["nodes"]])
+                    for t in tiers]
             gaps = []
             for ti in range(T - 1):
                 labs = [text_w(e["label"], FSE) + 18 for e in edges
                         if e.get("label") and sorted((tid[e["from"]], tid[e["to"]])) == [ti, ti + 1]]
                 gaps.append(max([34] + labs))
             need = 12 + sum(c + 16 for c in colw) + sum(gaps)
-            W = max(MINW, need)
-            small = max(14, round(12.3 * W / NARROWEST * 2) / 2)
-            if small == FSS:
-                break
-            FS, FSS, FSE = small + 2, small, small
-        # Tier names widen their column without feeding back into the font size (that loop never settles
-        # for long names). If that makes the SVG wider than the fonts were sized for, say so; check.mjs then
-        # reports text under 12px at the narrowest width.
-        for ti, t in enumerate(tiers):
-            colw[ti] = max(colw[ti], tier_w(t["name"], FSS) + 4)
-        need2 = 12 + sum(c + 16 for c in colw) + sum(gaps)
-        if need2 > W + 0.5:
-            print(f"WARN: architecture tier names are too long for the side-by-side layout (needs ~{need2:.0f} of {W:.0f} units); "
-                  f"shorten them", file=sys.stderr)
-            W = need2
-        need = max(need, need2)
+            return colw, gaps, need, max(MINW, need)
+
+        def solve(with_names):
+            # Fonts follow W and W follows the text: iterate until they settle. Text that grows faster than W
+            # never settles (ok=False), and then the final fonts render under 12px at NARROWEST.
+            FS, FSS, FSE = 16, 14, 14
+            for _ in range(30):
+                colw, gaps, need, W = measure(FS, FSS, FSE, with_names)
+                small = max(14, round(12.3 * W / NARROWEST * 2) / 2)
+                if small == FSS:
+                    break
+                FS, FSS, FSE = small + 2, small, small
+            else:   # not settled: measure the boxes with the fonts actually used
+                colw, gaps, need, W = measure(FS, FSS, FSE, with_names)
+            return FSS * NARROWEST / W >= 12, FS, FSS, FSE, colw, gaps, need, W
+
+        ok, FS, FSS, FSE, colw, gaps, need, W = solve(True)
+        if not ok:
+            # Long tier names: growing the fonts grows the names too and the loop runs away. Size the fonts
+            # from the nodes alone, then let the names widen their columns.
+            ok, FS, FSS, FSE, colw, gaps, need, W = solve(False)
+            if not ok:
+                print("WARN: architecture has too much text side by side (node labels or edge labels); "
+                      "shorten them or use fewer tiers", file=sys.stderr)
+            for ti, t in enumerate(tiers):
+                colw[ti] = max(colw[ti], tier_w(t["name"], FSS) + 4)
+            need = 12 + sum(c + 16 for c in colw) + sum(gaps)
+            W = max(W, need)
+            if FSS * NARROWEST / W < 12:
+                print(f"WARN: architecture tier names are too long for the side-by-side layout "
+                      f"(by estimate, text may drop below 12px at {NARROWEST}px); if check.mjs reports small text, shorten them", file=sys.stderr)
         extra = (W - need) / max(T - 1, 1) if T > 1 else 0
         ty = max(27, math.ceil(0.9 * FSS + 8))   # tier name baseline: cap height stays inside the band (top y=6) as fonts grow
         top = max(top, ty + 13)
