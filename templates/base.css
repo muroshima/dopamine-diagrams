@@ -97,6 +97,9 @@
 @keyframes dd-cut{from{transform:translateX(-40%) skewX(-12deg);opacity:0}to{transform:skewX(-12deg);opacity:1}}   /* short slide: big fast sweeps make people queasy */
 .dd.lv1 .ci{transform:none;background:#9a3412;box-shadow:none;animation-name:pop!important}.dd.lv1 .ci>span{transform:none}   /* calm: no slant, white on #9a3412 (7:1) */
 
+@keyframes dd-passbar{from{border-color:var(--b)}}
+@keyframes dd-passin{from{background:var(--bs)}}
+
 /* Entrances */
 @keyframes stamp{0%{opacity:0;transform:scale(2.2) rotate(-8deg)}55%{opacity:1;transform:scale(.92) rotate(2deg)}100%{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}

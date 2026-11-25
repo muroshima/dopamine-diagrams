@@ -57,7 +57,7 @@ Light runs along the line. Pick a step to read it.
 
 ### ladder: levels, maturity, staged plans
 
-Pick your level and the next move appears in gold.
+Pick your level: the levels below light up one by one with a ✓, and the next move appears in gold.
 
 <img src="docs/en/ladder.png" alt="Ladder: five bars from Hero to Self-healing; under the selected Lv.2 Runbooks, the next move in gold">
 

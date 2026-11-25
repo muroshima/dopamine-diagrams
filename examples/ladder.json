@@ -28,5 +28,6 @@
       "next": "人は未知の障害に集中する"
     }
   ],
-  "note": "ladder のサンプルです"
+  "note": "ladder のサンプルです",
+  "stepup": true
 }
