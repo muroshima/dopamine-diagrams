@@ -13,6 +13,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.btn` press | Sinks 3px onto its shadow while pressed (`:active`) | Every button | Same |
 | `.cnt` | A number rolling from `--from` to `--to` (an `@property` integer drawn by a counter; 1.4s, easing out). With motion off only the final value shows; without `@property` it switches to the final value once, halfway. The real number sits in `.sr` for screen readers | compare `metric` | Same |
 | `.gg` | Gauge with a goal line. Switching to after grows or shrinks it from the before length; when it reaches the goal, "Reached ✓" stamps in. Reaching is also said in words and by the border | compare `metric.goal` | The reached mark pops |
+| `.ci` | A slanted band slides in once from the left with one line and stays (0.55s, easing out). The text is not slanted | explorer `cases[].cutin`, compare `before.cutin` / `after.cutin` (not with `reveal:"flip"`) | Unslanted accent band. Print: border and text only |
 | Flip (explorer `reveal:"flip"`) | A face-down card turns once in .6s (`rotateY`). No loop | Answers readers should guess first | Same. Motion off switches at once; print shows the face only |
 | `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
 | `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" (「完了！」 in Japanese) | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |

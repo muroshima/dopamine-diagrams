@@ -29,6 +29,7 @@ architecture in words. For two *diagrams* side by side, use two specs instead.
 | `items[]` | A string, or `{"text", "tone"}` with tone `bad`, `good` or `neutral`. Defaults: before `bad`, after `good` |
 | `metric` | Optional. `{"label", "before", "after", "unit"}`, whole numbers from 0. The before panel shows the before value; switching to after rolls the number from before to after. One focal number only |
 | `metric.goal`, `metric.better` | Optional. With a goal, both panels show a gauge with a goal line, and say "Reached ✓" or "Not yet" in words and with the border. better is `lower` or `higher`; by default it follows the direction from before to after (required when before equals after). Keep the goal label ("Goal 15") short |
+| `before.cutin`, `after.cutin` | Optional. A one-line verdict on a slanted band when the panel appears; usually on `after` only |
 
 ## Limits
 

@@ -41,7 +41,7 @@ Click to break it down. The pieces appear one by one, then a gold stamp lands.
 
 Click to flip "before" into "after".
 
-<img src="docs/en/compare.png" alt="Compare, after side: inside a rainbow border, the count rolled down from 24 to 12, a gauge past its goal line of 15 marked "Reached ✓", four requests routed by risk and the gold headline 'Half the queue gone'">
+<img src="docs/en/compare.png" alt="Compare, after side: inside a rainbow border, a slanted cut-in band "Half weren't needed", the count rolled down from 24 to 12, a gauge past its goal line of 15 marked "Reached ✓", four requests routed by risk and the gold headline 'Half the queue gone'">
 
 ### loop: a cycle that repeats, and when to restart from the goal
 
