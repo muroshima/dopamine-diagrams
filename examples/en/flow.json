@@ -12,7 +12,8 @@
     },
     {
       "label": "CI",
-      "detail": "Tests, lint and a preview deploy run on every push"
+      "detail": "Tests, lint and a preview deploy run on every push",
+      "new": "NEW"
     },
     {
       "label": "Review",

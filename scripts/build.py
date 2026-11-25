@@ -167,6 +167,27 @@ def hush_base(sel):
             f"@media (prefers-reduced-motion:reduce){{{sel}{{opacity:1!important}}}}@media print{{{sel}{{opacity:1!important}}}}")
 
 
+def new_badge(item, where):
+    """A small tilted tag on what changed, like NEW in a gacha summary. item["new"]: true or the word to show."""
+    v = item.get("new") if isinstance(item, dict) else None
+    if v is None or v is False:
+        return ""
+    if v is True:
+        v = "NEW"
+    if not isinstance(v, str) or not v.strip():
+        fail(f"{where}: new must be true or a short word; got {v!r:.40}")
+    if text_w(v, 12) > 36:
+        print(f"WARN: {where}: new tag '{v}' is long; keep it to a word like NEW, 追加, 変更", file=sys.stderr)
+    return f' <span class="nb">{E(v)}</span>'   # the space keeps the tag apart from the text when read or copied
+
+
+def new_count_check(items, where, noun="items"):
+    k = sum(1 for it in items if isinstance(it, dict) and it.get("new") not in (None, False))
+    if k > 3:
+        print(f"WARN: {where}: {k} {noun} have a new tag; keep it to 3 or fewer so the changes still stand out",
+              file=sys.stderr)
+
+
 def cutin(item, where):
     """A slanted band that cuts in once with a one-line verdict, like a pachinko cut-in. "" when absent."""
     t = item.get("cutin")
@@ -776,6 +797,9 @@ def _arch_svg(spec, u, mode, focal):
 
 def render_architecture(spec, u, lv):
     need(spec, "title")
+    if any("new" in n for t in spec.get("tiers", []) if isinstance(t, dict) for n in t.get("nodes", []) if isinstance(n, dict)):
+        print("WARN: architecture: nodes do not show a new tag (it would collide with edges and labels); "
+              "mark changes in the label or sub instead", file=sys.stderr)
     ids = []
     for t in items_of(spec, "tiers", dict, ("name",), lo=1, hi=6):
         for n in items_of(t, "nodes", dict, ("id", "label"), lo=1, hi=4):
@@ -875,9 +899,11 @@ def render_compare(spec, u, lv):
 
     def panel(side, key, default_tone):
         d = spec[key]
+        new_count_check(d.get("items", []), f"compare {key}")
         items = "".join(
             f'<div class="cp-item {E(it.get("tone", default_tone)) if isinstance(it, dict) else default_tone}">'
-            f'{E(it["text"] if isinstance(it, dict) else it)}</div>' for it in d.get("items", []))
+            f'{E(it["text"] if isinstance(it, dict) else it)}{new_badge(it, f"compare {key} item {k+1}")}</div>'
+            for k, it in enumerate(d.get("items", [])))
         head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
@@ -973,8 +999,11 @@ def render_flow(spec, u, lv):
     focal = as_index(spec.get("focal", n - 1), n, "flow: focal")
     hush = hush_on(spec, "flow")
     inp = "".join(f'<input class="h" type="radio" name="{u}-f" id="{u}-f{i}"{" checked" if i == 0 else ""}>' for i in range(n))
-    track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}"><span class="fl-dot">{i+1}</span>'
-                    f'<span class="fl-lb">{E(st["label"])}</span></label>' for i, st in enumerate(steps))
+    new_count_check(steps, "flow", "steps")
+    track = "".join(f'<label for="{u}-f{i}" class="fl-step{" fl-focal" if i == focal else ""}">'
+                    f'<span class="fl-dot">{i+1}{new_badge(st, f"flow step {i+1}")}</span>'
+                    f'<span class="fl-lb">{E(st["label"])}</span></label>'
+                    for i, st in enumerate(steps))
     pans = ""
     for i, st in enumerate(steps):
         inner = (f'<div class="fl-ph"><span class="gold">{i+1:02d}</span>{E(st["label"])}</div>'

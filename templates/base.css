@@ -100,6 +100,13 @@
 @keyframes dd-passbar{from{border-color:var(--b)}}
 @keyframes dd-passin{from{background:var(--bs)}}
 
+/* NEW tag: a small tilted sticker on what changed (gacha 10-pull summary). Pops in once, never glows or loops. */
+.dd .nb{position:absolute;top:-7px;right:-6px;z-index:2;padding:0 6px;border-radius:4px;font-size:12px;font-weight:900;
+  line-height:1.5;letter-spacing:.02em;color:#fff;background:#b91c1c;rotate:8deg;white-space:nowrap;   /* rotate, not transform: pop's end state must not undo the tilt */
+  
+  box-shadow:0 1px 0 #7f1d1d;animation:pop .4s ease-out .2s both}
+@media print{.dd .nb{background:none;color:#b91c1c;border:1px solid #b91c1c;box-shadow:none}}
+
 /* Entrances */
 @keyframes stamp{0%{opacity:0;transform:scale(2.2) rotate(-8deg)}55%{opacity:1;transform:scale(.92) rotate(2deg)}100%{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
