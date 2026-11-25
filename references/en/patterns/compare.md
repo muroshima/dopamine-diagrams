@@ -27,6 +27,7 @@ architecture in words. For two *diagrams* side by side, use two specs instead.
 |---|---|
 | `before`, `after` | `label` (badge), `title`, `items`, `message`; `after.headline` is shown in gold |
 | `items[]` | A string, or `{"text", "tone"}` with tone `bad`, `good` or `neutral`. Defaults: before `bad`, after `good` |
+| `metric` | Optional. `{"label", "before", "after", "unit"}`, whole numbers from 0. The before panel shows the before value; switching to after rolls the number from before to after. One focal number only |
 
 ## Limits
 

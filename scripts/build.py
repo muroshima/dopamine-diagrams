@@ -745,6 +745,31 @@ def render_compare(spec, u, lv):
                     fail(f"compare: every {side} item needs 'text'; got {it!r:.60}")
             elif not isinstance(it, (str, int, float)):
                 fail(f"compare: {side} items must be strings or objects with 'text'")
+    m = spec.get("metric")
+    if m is not None:
+        if not isinstance(m, dict):
+            fail("compare: metric must be an object with 'before' and 'after' numbers")
+        for k in ("before", "after"):
+            v = m.get(k)
+            if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 10**9:
+                fail(f"compare: metric.{k} must be a whole number from 0 to 1000000000; got {v!r:.40}")
+        for k in ("label", "unit"):
+            if k in m and not isinstance(m[k], str):
+                fail(f"compare: metric.{k} must be a string")
+
+    def metric(key):
+        if m is None:
+            return ""
+        v, unit = m[key], E(m.get("unit", ""))
+        if unit[:1].isascii() and unit[:1].isalpha():   # "40 min", but "40分"
+            unit = " " + unit
+        if key == "before":
+            val = f'<b class="cp-mv">{v}{unit}</b>'
+        else:   # counts from the before value to the after value when the after panel appears
+            val = (f'<b class="cp-mv gold"><span class="cnt" aria-hidden="true" style="--from:{m["before"]};--to:{v}"></span>'
+                   f'<span class="sr">{v}</span>{unit}</b>')
+        return f'<div class="cp-metric"><span class="cp-ml">{E(m.get("label", ""))}</span>{val}</div>'
+
     def panel(side, key, default_tone):
         d = spec[key]
         items = "".join(
@@ -753,7 +778,7 @@ def render_compare(spec, u, lv):
         head = f'<div class="cp-head"><span class="cp-badge">{E(d.get("label", T(spec, side.lower())))}</span>{E(d.get("title", ""))}</div>'
         gold = f'<span class="gold">{E(d["headline"])}</span>' if d.get("headline") else ""
         msg = f'<div class="cp-msg">{gold}{E(d.get("message", ""))}</div>' if (d.get("message") or gold) else ""
-        return head + f'<div class="cp-items">{items}</div>' + msg
+        return head + metric(key) + f'<div class="cp-items">{items}</div>' + msg
     body = (f'<input class="h" type="checkbox" id="{u}-s">'
             f'<div class="cp-top"><div class="ttl">{E(spec["title"])}</div>'
             f'<label for="{u}-s" class="btn shine"><span class="cp-t1">{E(spec.get("button", T(spec, "compare_button")))}</span>'
@@ -764,6 +789,7 @@ def render_compare(spec, u, lv):
     css = (f"#{u}-s:focus-visible~.cp-top .btn{{outline:2px solid var(--b);outline-offset:2px}}"
            f"{s}~.cp-top .cp-t1,{s}~.cp-stage .cp-before{{display:none}}{s}~.cp-top .cp-t2{{display:inline}}"
            f"{s}~.cp-stage .cp-after{{display:block;animation:var(--enter) .55s ease-out both}}"
+           f"{s}~.cp-stage .cp-after .cnt{{animation:dd-count 1.4s cubic-bezier(.2,.7,.2,1) .35s both}}"
            f"@media print{{#{u} .cp-before,#{u} .cp-after{{display:block}}#{u} .cp-after{{margin-top:10px}}#{u} .cp-top .btn{{display:none}}}}")
     return body, css
 
