@@ -5,7 +5,7 @@ Zenn は、言語を `html-embed` にしたコードブロックを、サンド�
 仕様: https://zenn.dev/zenn/articles/markdown-guide 「HTML/CSS の埋め込み」）。
 
 ```sh
-python3 scripts/build.py spec.json --target zenn -o out.md   # one ```html-embed block per spec
+python3 scripts/build.py spec.json --target zenn -o out.md   # spec 1つにつき ```html-embed ブロックが1つ
 node scripts/check.mjs out.md --shots .check/out
 ```
 

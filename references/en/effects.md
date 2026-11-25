@@ -10,7 +10,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.rb` + inner `.in` | Rainbow light running around a box (1.8s per turn; lv3 1.2s) | The one box the reader should end on | 6px band. Never two side by side |
 | `.neon` / `.chip-on` | Box shadow that brightens and fades (1.6s) | Selected chip, the active gate | lv1: static outline |
 | `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
-| `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |
+| `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" (「完了！」 in Japanese) | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |
 | `pop` keyframes | Fades up 6px | Secondary content appearing | |
 | `.btn` | Orange pill button with a 3D edge and glow | The `<label>` that toggles a state | |
 

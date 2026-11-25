@@ -29,7 +29,7 @@ on-call runbooks. If there is no "common mistake" worth showing, omit `bad`; the
 | `cases[].situation` | no | Panel heading; defaults to `label` |
 | `cases[].bad` | no | Shown struck through. Say in `note` if these are invented |
 | `cases[].good` | yes | The answer; one sentence |
-| `bad_label`, `good_label` | no | Defaults: "Common mistake", "Do this instead" |
+| `bad_label`, `good_label` | no | Defaults: "Common mistake", "Do this instead"; 「よくある間違い」「こうする」 when the spec is Japanese (see `lang` in SKILL.en.md) |
 
 ## Limits
 

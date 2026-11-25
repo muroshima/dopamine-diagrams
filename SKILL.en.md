@@ -1,7 +1,8 @@
 # dopamine-diagrams
 
 English version of `SKILL.md`. The Japanese `SKILL.md` is the one agents load; both say the same thing.
-UI defaults (button labels and so on) are Japanese when the spec contains Japanese text, English otherwise.
+UI defaults (button labels and so on) are Japanese when any spec text contains hiragana or katakana, English otherwise;
+`"lang": "ja"` or `"lang": "en"` in the spec overrides the guess.
 
 Diagrams for readers who scroll past anything that does not glow. The look is loud on purpose, but the loudness
 is spent on one or two focal points so the diagram still teaches something.
@@ -98,6 +99,7 @@ The effects only work when most of the diagram is calm.
 ## Extending
 
 New pattern = a renderer function in `scripts/build.py` (registered in `RENDER`), a CSS file in
-`templates/parts/`, a reference file in `references/en/patterns/`, and an example spec in `examples/en/`.
+`templates/parts/`, reference files in `references/patterns/` (Japanese) and `references/en/patterns/`, and example specs in
+`examples/` (Japanese) and `examples/en/`.
 Generate state selectors with the diagram's unique id (see `render_explorer`), keep CSS class names prefixed
 per pattern, then run the checker on all three targets.

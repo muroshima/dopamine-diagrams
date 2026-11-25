@@ -1,6 +1,6 @@
 {
   "pattern": "compare",
-  "title": "その申請、全部に承認がいる？",
+  "title": "その申請、全部に承認が要る？",
   "button": "慣習を疑う ▶",
   "before": {
     "title": "全部が課長待ち",

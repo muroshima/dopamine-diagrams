@@ -10,7 +10,7 @@
 | SVG text under 12px on narrow screens | SVG scales down with its container | build.py sizes fonts for the narrowest width and passes them as CSS variables; checker measures with `getScreenCTM()` |
 | Focal node loses its rainbow stroke on phones | Gradient defined in the hidden wide SVG; `display:none` SVGs do not paint their gradients | Each SVG defines its own gradient id; stroke is set inline |
 | Edge labels sit on top of boxes | Fixed column widths left no room between tiers | Gaps are computed from the widest label between each pair of tiers |
-| Tier names crossed by edges in the narrow layout | Names were centred where edges run | Names sit top-left inside a row band |
+| Tier names crossed by edges in the narrow layout | Names were centred where edges run | Names sit at the top of a row band, at the leftmost spot no edge crosses; build.py warns if there is none |
 | Embed height checks always fail | Measuring `documentElement.scrollHeight` returns the viewport height | Measure the bottom of the `.dd` element |
 | "Button wraps" false alarm in slides | Slides zoom the diagram 1.3×; the check compared zoomed box height with unzoomed font size | Multiply by the computed `zoom` |
 | PDF shows a half-faded or empty state | Animation never runs in print; elements started at opacity 0 | Base style is the final frame; `@media print` disables animation and shows the useful state |

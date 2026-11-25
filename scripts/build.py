@@ -92,8 +92,18 @@ DEFAULTS = {
 }
 
 
+def spec_lang(spec):
+    """"lang" in the spec wins; otherwise Japanese when any text has kana (kanji alone could be Chinese or a place name)."""
+    lang = spec.get("lang")
+    if lang is not None:
+        if lang not in DEFAULTS:
+            fail(f"lang must be one of {sorted(DEFAULTS)}; got {lang!r:.40}")
+        return lang
+    return "ja" if re.search(r"[぀-ヿ]", json.dumps(spec, ensure_ascii=False)) else "en"
+
+
 def T(spec, key):
-    return DEFAULTS["ja" if has_cjk(json.dumps(spec, ensure_ascii=False)) else "en"][key]
+    return DEFAULTS[spec_lang(spec)][key]
 
 
 # ---------------------------------------------------------------- explorer
@@ -277,18 +287,20 @@ def _arch_svg(spec, u, mode, focal):
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
     if mode != "wide":
-        # Tier names sit in the top corner of their band. Use the left corner unless an edge enters the band
-        # there (long Japanese names reach the first node's column); then the right corner if that one is free.
+        # Tier names sit at the top of their band, at the leftmost spot no edge crosses (long Japanese names
+        # reach the first node's column, where edges usually enter).
         for name, by in names:
             nw = text_w(name, FSS) * 1.04 + 6
             xs = [x for p0, p1, p2, p3 in curves for t in [i / 40 for i in range(41)]
                   for x, yy in [_bez(p0, p1, p2, p3, t)] if by <= yy <= by + 22]
-            left_busy = any(6 <= x <= 12 + nw for x in xs)
-            right_busy = any(W - 12 - nw <= x <= W - 6 for x in xs)
-            if left_busy and not right_busy:
-                out.append(f'<text class="ar-tier" x="{W-12}" y="{by+16:.1f}" style="text-anchor:end">{E(name)}</text>')
-            else:
-                out.append(f'<text class="ar-tier" x="12" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
+            # first free slot scanning from the left, then the right corner; edges keep 6px clear of the name
+            cands = [12 + 4 * k for k in range(int((W - 24 - nw) // 4) + 1)] + [W - 12 - nw]
+            free = [x0 for x0 in cands if not any(x0 - 6 <= x <= x0 + nw + 6 for x in xs)]
+            if not free:
+                print(f"WARN: architecture tier '{name}' has edges crossing its name on the phone layout; "
+                      f"shorten the tier name", file=sys.stderr)
+            x0 = free[0] if free else 12
+            out.append(f'<text class="ar-tier" x="{x0:.1f}" y="{by+16:.1f}" style="text-anchor:start">{E(name)}</text>')
     nodes = []
     gid = f"{u}-{mode[0]}-rbw"
     for nid, (cx, cy, w, h, _) in pos.items():

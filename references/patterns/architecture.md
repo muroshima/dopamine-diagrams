@@ -25,7 +25,7 @@
 |---|---|---|
 | `tiers[].name` | はい | 短く。各列（各行）の上に表示 |
 | `tiers[].nodes[].id` | はい | 一意にする。接続線と hover のセレクタに使う |
-| `nodes[].label`, `nodes[].sub` | label ははい | `sub` は小さめの2行目 |
+| `nodes[].label`, `nodes[].sub` | label は必須 | `sub` は小さめの2行目 |
 | `edges[]` | いいえ | `from` は同じ層か前の層にあること（線は前に向かって流れる） |
 | `edges[].label` | いいえ | 短く（10文字以内）。ラベルが入るように層の間隔が広がる |
 | `focal` | いいえ | id を1つか、2つまでのリスト（3つで build.py が止まる） |

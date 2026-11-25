@@ -16,7 +16,7 @@ the button. CSS reacts with `#id:checked ~ …`.
    breaks every selector.
 2. **Unique ids per diagram.** Slides and pages hold several diagrams; build.py prefixes ids with the diagram id
    (`dd3f2a1c-m0`). Never hand-write ids like `tab1`.
-3. **The label text must change too**, not only the colour (e.g. "Break it down ▶" becomes "Back").
+3. **The label text must change too**, not only the colour (e.g. "Break it down ▶" becomes "Back"; in a Japanese spec 「分解する ▶」 becomes 「戻る」).
 4. **Keyboard**: hidden inputs stay focusable. Add a `:focus-visible` outline on the matching label
    (build.py does this for every generated state).
 5. **Touch**: `:hover` effects are a bonus. Nothing important may depend on hover alone.
