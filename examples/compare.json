@@ -35,5 +35,11 @@
     "headline": "承認待ちが半分に",
     "message": "まず承認そのものが要るかを問い、要るならリスクに見合った重さにする"
   },
-  "note": "compare のサンプルです"
+  "note": "compare のサンプルです",
+  "metric": {
+    "label": "承認待ちの件数",
+    "before": 24,
+    "after": 12,
+    "unit": "件"
+  }
 }

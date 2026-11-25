@@ -67,6 +67,15 @@
     conic-gradient(#ff2d55,#ff9500,#ffd700,#22c55e,#06b6d4,#3b82f6,#a855f7,#ff2d55) border-box;
   box-shadow:0 0 8px rgba(255,140,0,.6)}
 
+/* Count-up: <span class="cnt" aria-hidden="true" style="--from:A;--to:B"></span><span class="sr">B</span>. The number is
+   drawn by a counter on an animatable integer (@property), like a reward or score rolling up. With motion off it shows
+   B; without @property it switches from A to B once, halfway. The .sr copy is the real text for screen readers. */
+@property --dd-n{syntax:'<integer>';inherits:false;initial-value:0}
+.dd .cnt{--dd-n:var(--to);counter-reset:dd-n var(--dd-n);font-variant-numeric:tabular-nums}
+.dd .cnt::after{content:counter(dd-n)}
+.dd .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@keyframes dd-count{from{--dd-n:var(--from,0)}to{--dd-n:var(--to)}}
+
 /* Entrances */
 @keyframes stamp{0%{opacity:0;transform:scale(2.2) rotate(-8deg)}55%{opacity:1;transform:scale(.92) rotate(2deg)}100%{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
