@@ -223,10 +223,21 @@ def _arch_svg(spec, u, mode, focal):
                              or (tid[e["from"]] == ti and tid[e["to"]] > ti + 1))]
                 # same-tier edges bulge into the gap on their right (the last tier: on its left); both sides add up
                 def bulge_need(t):
-                    ws = [text_w(e["label"], FSE) + 10 if e.get("label") else 0 for e in edges
-                          if tid[e["from"]] == tid[e["to"]] == t
-                          and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)]
-                    return (max(ws) + 20 + 10 * (len(ws) - 1)) if ws else 0
+                    # same nesting rule as the routing below: each bulge clears the labels of the bulges inside it
+                    grp = sorted((e for e in edges if tid[e["from"]] == tid[e["to"]] == t
+                                  and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)),
+                                 key=lambda e: abs(nord[e["from"]] - nord[e["to"]]))
+                    done, need_ = [], 0
+                    for e in grp:
+                        lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
+                        lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+                        off = max(14, lw_i / 2 + 10)
+                        for (lo2, hi2, off2, lw2) in done:
+                            if lo < hi2 and lo2 < hi:
+                                off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
+                        done.append((lo, hi, off, lw_i))
+                        need_ = max(need_, off + lw_i / 2 + 6)
+                    return need_
                 side_need = bulge_need(ti) if ti < T - 1 else 0
                 if ti == T - 2:
                     side_need += bulge_need(T - 1)
@@ -355,8 +366,8 @@ def _arch_svg(spec, u, mode, focal):
     nb = {i: set() for i in pos}   # adjacency for hover dimming
     for e in edges:
         nb[e["from"]].add(e["to"]); nb[e["to"]].add(e["from"])
-    eds, curves, lrects, routes = [], [], [], []
-    extra_h, lanes, apex = 0, {}, {}
+    eds, curves, lrects, routes, lpos = [], [], [], [], {}
+    extra_h, lanes = 0, {}
 
     def bulged(e):
         return tid[e["from"]] == tid[e["to"]] and (e.get("label") or abs(nord[e["from"]] - nord[e["to"]]) > 1)
@@ -366,6 +377,56 @@ def _arch_svg(spec, u, mode, focal):
                        key=lambda i: abs(nord[edges[i]["from"]] - nord[edges[i]["to"]]))
         for k, i in enumerate(group):
             brank[i] = k
+    # Wide: apex offset per bulge, shortest span first. A bulge sits outside every earlier bulge whose span overlaps
+    # its own, past that bulge's label, so nested lines and labels never cross; disjoint ones stay close to the column.
+    boff = {}
+    for t_i in range(T):
+        done = []
+        for i in sorted((i for i in brank if tid[edges[i]["from"]] == t_i), key=lambda i: brank[i]):
+            e = edges[i]
+            lo, hi = sorted((nord[e["from"]], nord[e["to"]]))
+            lw_i = text_w(e["label"], FSE) + 10 if e.get("label") else 0
+            off = max(14, lw_i / 2 + 10)
+            for (lo2, hi2, off2, lw2) in done:
+                if lo < hi2 and lo2 < hi:   # spans overlap
+                    off = max(off, off2 + lw2 / 2 + lw_i / 2 + 10)
+            boff[i] = off
+            done.append((lo, hi, off, lw_i))
+
+    def self_check(routes, pts_of):
+        """Measure the finished drawing and warn about what a reader would misread. The router is a heuristic; this
+        check is the guarantee: a line under a node it does not connect, two lines between different nodes running
+        together, or a label lying on another line always produces a WARN."""
+        ends = [(pos[e["from"]], pos[e["to"]]) for e, _, _, _ in routes]
+        seen = set()
+        for ri, (e, a, b, segs) in enumerate(routes):
+            for nid, (cx, cy, w, h, _) in pos.items():
+                if nid in (e["from"], e["to"]):
+                    continue
+                if any(cx - w / 2 + 3 < x < cx + w / 2 - 3 and cy - h / 2 + 3 < y < cy + h / 2 - 3 for x, y in pts_of[ri]):
+                    print(f"WARN: architecture edge {e['from']}->{e['to']} runs under node '{nid}' in the {mode} layout; "
+                          f"connect neighbouring tiers or put fewer nodes in between", file=sys.stderr)
+                    break
+        for ri in range(len(routes)):
+            for rj in range(ri + 1, len(routes)):
+                ei, ej = routes[ri][0], routes[rj][0]
+                # near their nodes lines may meet (a fan-out from one node); count only the stretch away from them
+                tips = [(q[0], q[1], q[2], q[3]) for pair in (ends[ri], ends[rj]) for q in pair]
+                close = sum(1 for x, y in pts_of[ri]
+                            if min(abs(x - u) + abs(y - v) for u, v in pts_of[rj]) < 4
+                            and all(abs(x - tx) > tw / 2 + 18 or abs(y - ty_) > th / 2 + 18 for tx, ty_, tw, th in tips))
+                if close > 6 and (ri, rj) not in seen:
+                    seen.add((ri, rj))
+                    print(f"WARN: architecture edges {ei['from']}->{ei['to']} and {ej['from']}->{ej['to']} run together "
+                          f"in the {mode} layout and may read as connected; reorder nodes or drop an edge", file=sys.stderr)
+        for ri, (e, a, b, segs) in enumerate(routes):
+            if not e.get("label") or ri not in lpos:
+                continue
+            x0, x1, y0, y1 = lpos[ri]
+            others = [q for rj, ps in enumerate(pts_of) if rj != ri for q in ps]
+            if any(x0 + 2 < qx < x1 - 2 and y0 + 2 < qy < y1 - 2 for qx, qy in others):
+                print(f"WARN: architecture edge label '{e['label']}' ({e['from']}->{e['to']}) lies on another line in the "
+                      f"{mode} layout; shorten the label or drop an edge", file=sys.stderr)
 
     def no_lane(e, tier_name):
         print(f"WARN: architecture edge {e['from']}->{e['to']} has no clear lane through tier '{tier_name}' in the {mode} "
@@ -386,9 +447,7 @@ def _arch_svg(spec, u, mode, focal):
                 side = 1 if (a[4] < T - 1 or T == 1) else -1
                 k = brank[ei]
                 edge_x = band_x[a[4]][1] if side > 0 else band_x[a[4]][0]
-                off = max(14, lwid / 2 + 10, apex.get((a[4], side), 0) + 10)
-                apex[(a[4], side)] = off
-                g = edge_x + side * off
+                g = edge_x + side * boff[ei]
                 # off the side centre (where tier-to-tier lines leave), and apart for each nested bulge
                 dy = min(a[3] / 2 - 4, a[3] * (.22 + .1 * k)) * (1 if b[1] > a[1] else -1)
                 segs = [bulge((a[0] + side * a[2] / 2, a[1] + dy), (b[0] + side * b[2] / 2, b[1] - dy), 0, g)]
@@ -414,11 +473,11 @@ def _arch_svg(spec, u, mode, focal):
                 right = b[0] > a[0]
                 p0 = (a[0] + (a[2]/2 if right else -a[2]/2), a[1]); p3 = (b[0] - (b[2]/2 if right else -b[2]/2), b[1])
                 segs = [hseg(p0, p3)]
-            elif same:   # swing below the row into the gap (a second one above it); the last row gets extra room
+            elif same:   # swing below the row into the gap, nested by span; the last row gets extra room
                 # Always the gap below the row: the row below never uses it for its own bulges, so they cannot meet.
                 level = brank[ei]
                 depth = 8 + 7 * level
-                if depth > rowgap - 4 and a[4] < T - 1:
+                if depth > rowgap - 8 if a[4] < T - 1 else level >= 3:
                     print(f"WARN: architecture tier '{tiers[a[4]]['name']}' has too many same-tier edges for the phone "
                           f"layout; they will overlap the next row. Connect fewer nodes inside the tier", file=sys.stderr)
                 side = 1
@@ -487,11 +546,13 @@ def _arch_svg(spec, u, mode, focal):
                       f"in the {mode} layout and will overlap a node or another label; shorten or drop it", file=sys.stderr)
             mx, my = spot
             lrects.append((mx - lw / 2, mx + lw / 2, my - lh / 2, my + lh / 2))
+            lpos[ri] = lrects[-1]
             lab = (f'<rect class="ar-elabel-bg" x="{mx-lw/2:.1f}" y="{my-lh/2:.1f}" width="{lw:.1f}" height="{lh:.0f}" rx="4"/>'
                    f'<text class="ar-elabel" x="{mx:.1f}" y="{my+FSE*0.35:.1f}">{E(e["label"])}</text>')
         eds.append(f'<g class="ar-ed x-{idx[e["from"]]} x-{idx[e["to"]]}"><path class="ar-base" d="{d}"/>'
                    f'<path class="ar-flow" d="{d}"/>{lab}</g>')
     H += extra_h
+    self_check(routes, pts_of)
     if mode != "wide":
         # Tier names sit on the top edge of their band, preferably where no edge passes (they are drawn over the
         # edges with a halo, so a crossing stays readable) and never on an edge label.
