@@ -16,7 +16,7 @@ TPL = ROOT / "templates"
 ZENN_MAX_BYTES = 50 * 1024
 
 DARK_VARS = ("--bg:#161b22;--ink:#e6edf3;--mut:#9da7b3;--line:#30363d;--card:#0d1117;--a:#fb923c;--as:#431407;"
-             "--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;"
+             "--b:#60a5fa;--bs:#172554;--g:#4ade80;--gs:#052e16;--r:#f87171;--rs:#450a0a;--y:#facc15;--ys:#422006;--yt:#fde68a;--bt:#93c5fd;"
              "--v:#a78bfa;--glow:#ffd54f")
 CHIP_ON = ("background:linear-gradient(180deg,#ff8a3d,#e8430c);border-color:transparent;color:#fff;"
            "animation:dd-neon var(--pulse) ease-in-out infinite")
@@ -103,11 +103,12 @@ DEFAULTS = {
     "ja": {"bad_label": "よくある間違い", "good_label": "こうする", "done": "完了！", "decompose_button": "分解する ▶",
            "compare_button": "直す ▶", "proportion_button": "よく見る ▶", "back": "戻る", "now_label": "いま",
            "next_label": "次の一手", "prompt": "いまどの段？ 段をクリック", "gem_title": "見落としてはいけない1件",
-           "before": "ビフォー", "after": "アフター"},
+           "before": "ビフォー", "after": "アフター", "tier1": "低", "tier2": "中", "tier3": "高", "tier4": "最重要"},
     "en": {"bad_label": "Common mistake", "good_label": "Do this instead", "done": "Done!",
            "decompose_button": "Break it down ▶", "compare_button": "Show the fix ▶", "proportion_button": "Look closer ▶",
            "back": "Back", "now_label": "Now", "next_label": "Next move", "prompt": "Where are you? Click a step",
-           "gem_title": "The one that matters", "before": "Before", "after": "After"},
+           "gem_title": "The one that matters", "before": "Before", "after": "After", "tier1": "Low", "tier2": "Medium", "tier3": "High",
+           "tier4": "Critical"},
 }
 
 
@@ -127,10 +128,36 @@ def T(spec, key):
     return DEFAULTS[spec_lang(spec)][key]
 
 
+def tier_badge(spec, item, where):
+    """Importance badge from item["importance"] (1-4): colour, line, stars and a word together. "" when absent."""
+    t = item.get("importance")
+    if t is None:
+        if item.get("importance_label") is not None:
+            fail(f"{where}: importance_label needs importance (1 to 4)")
+        return ""
+    if isinstance(t, bool) or not isinstance(t, int) or not 1 <= t <= 4:
+        fail(f"{where}: importance must be an integer 1 to 4; got {t!r:.40}")
+    word = item.get("importance_label", T(spec, f"tier{t}"))
+    if not isinstance(word, str) or not word.strip():
+        fail(f"{where}: importance_label must be a non-empty string; got {word!r:.40}")
+    if text_w(word, 12) > 110:
+        print(f"WARN: {where}: importance_label '{word}' is long for a badge; keep it to a word or two", file=sys.stderr)
+    return f'<span class="tb t{t}"><span class="st" aria-hidden="true">{"★" * t}</span>{E(word)}</span>'
+
+
+def tier_count_check(spec, items, where):
+    tops = sum(1 for it in items if isinstance(it, dict) and it.get("importance") == 4)
+    if tops > 1:
+        print(f"WARN: {where}: {tops} items use importance 4; keep the top level for one item so it still means the most "
+              f"important",
+              file=sys.stderr)
+
+
 # ---------------------------------------------------------------- explorer
 def render_explorer(spec, u, lv):
     need(spec, "title")
     cases = items_of(spec, "cases", dict, ("label", "good"), lo=2, hi=8)
+    tier_count_check(spec, cases, "explorer")
     bad_l = spec.get("bad_label", T(spec, "bad_label"))
     good_l = spec.get("good_label", T(spec, "good_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-m" id="{u}-m{i}"{" checked" if i == 0 else ""}>'
@@ -141,7 +168,7 @@ def render_explorer(spec, u, lv):
     for i, c in enumerate(cases):
         bad = (f'<div class="ex-bad"><b>{E(bad_l)}</b><s>{E(c["bad"])}</s></div>' if c.get("bad") else "")
         pans += (f'<div class="ex-p ex-p{i}"><div class="ex-hd"><span class="ex-num gold">{i+1:02d}</span>'
-                 f'<span class="ex-sit">{E(c.get("situation", c["label"]))}</span></div>{bad}'
+                 f'<span class="ex-sit">{E(c.get("situation", c["label"]))}</span>{tier_badge(spec, c, f"explorer case {i+1}")}</div>{bad}'
                  f'<div class="ex-good rb"><div class="in"><b class="gold">{E(good_l)}</b>'
                  f'<div class="ex-ok">{E(c["good"])}</div></div></div></div>')
     body = (f'{inp}<div class="ttl">{E(spec["title"])}</div>'
@@ -848,6 +875,7 @@ def render_ladder(spec, u, lv):
         if text_w(l["name"], 12) > barw * 2:
             print(f"WARN: ladder level name '{l['name']}' needs more than two lines on its bar; shorten it", file=sys.stderr)
     n = len(lvls)
+    tier_count_check(spec, lvls, "ladder")
     now_l = spec.get("now_label", T(spec, "now_label"))
     next_l = spec.get("next_label", T(spec, "next_label"))
     inp = "".join(f'<input class="h" type="radio" name="{u}-l" id="{u}-l{i}">' for i in range(n))
@@ -859,6 +887,7 @@ def render_ladder(spec, u, lv):
                  f'<span class="in"><span class="ld-n">{E(l.get("short", f"Lv.{i+1}"))}</span><span class="ld-nm">{E(l["name"])}</span></span></label>')
     pans = f'<div class="ld-p ld-p0">{E(spec.get("prompt", T(spec, "prompt")))}</div>'
     pans += "".join(f'<div class="ld-p ld-q{i}"><b class="ld-pt">{E(l.get("short", f"Lv.{i+1}"))} {E(l["name"])}</b>'
+                    f'{tier_badge(spec, l, f"ladder level {i+1}")}'
                     f'<div>{E(now_l)}: {E(l.get("now", ""))}</div>'
                     f'<div class="ld-nx">{E(next_l)} ▶ <span class="gold">{E(l.get("next", ""))}</span></div></div>' for i, l in enumerate(lvls))
     body = f'{inp}<div class="ttl">{E(spec["title"])}</div><div class="ld-st">{bars}</div><div class="ld-pn">{pans}</div>'

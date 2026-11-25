@@ -24,6 +24,7 @@ Use it for maturity models, levels, staged rollout plans.
 |---|---|
 | `levels[].name` | Shown on the bar on wide screens (hidden on phones; the panel repeats it) |
 | `levels[].short` | Bar label; default `Lv.N` |
+| `levels[].importance`, `levels[].importance_label` | Importance 1-4 and its word. A badge appears in the selected level's heading (same as explorer; 4 once). For how much each level matters, not for the maturity itself |
 | `levels[].now`, `next` | One sentence each |
 | `top_focal` | `false` removes the rainbow border from the top bar |
 

@@ -84,6 +84,7 @@ The effects only work when most of the diagram is calm.
   - `2` standard (default): rainbow title, gold, neon, stamps, rainbow border.
   - `3` full: faster border spin and pulse, glowing flow lines. For a hero diagram or a talk opener.
 - Never put two rainbow borders side by side. Never make every node focal.
+- To show importance in steps, use `importance` (1-4). As with a pachinko hold colour or a gacha rarity, the rainbow (4) is the top, used once.
 
 ## Hard rules
 

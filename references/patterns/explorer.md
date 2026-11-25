@@ -27,6 +27,8 @@
 | `cases[].bad` | いいえ | 取り消し線付きで表示。作った例なら `note` にそう書く |
 | `cases[].good` | はい | 答え。1文で |
 | `bad_label`, `good_label` | いいえ | 既定は spec がひらがなかカタカナを含むか `"lang": "ja"` なら「よくある間違い」「こうする」、そうでなければ "Common mistake"、"Do this instead"（SKILL.md の `lang` を参照） |
+| `cases[].importance` | いいえ | 重要度 1〜4。状況の見出しの横に段階バッジ（★の数と言葉）が出る。4（最重要、虹色の縁）は1つの図に1つまで。既定の言葉は「低・中・高・最重要」（英語の spec では Low・Medium・High・Critical） |
+| `cases[].importance_label` | いいえ | バッジの言葉を変える。1〜2語。`importance` と一緒に書く |
 
 ## 上限
 

@@ -9,6 +9,7 @@ in SKILL.en.md). Intensity level 1 turns most of them into static accents.
 | `.gold` | Gold gradient text with a dark outline; its glow breathes (1.8s) | 1–2 focal words: the answer label, a stamp | Needs ≥ 16px to read; outline keeps contrast on light backgrounds |
 | `.rb` + inner `.in` | Rainbow light running around a box (1.8s per turn; lv3 1.2s) | The one box the reader should end on | 6px band. Never two side by side |
 | `.neon` / `.chip-on` | Box shadow that brightens and fades (1.6s) | Selected chip, the active gate | lv1: static outline |
+| `.tb.t1`-`.t4` | Importance tier badge: colour, line style (dashed, double, solid with glow, rainbow edge), number of stars and a word change together. Static | Severity, risk, how much a level matters (spec `importance`) | lv1: no glow or rainbow on t3/t4 |
 | `.shine` | A band of light crossing a button every 3s | Primary button, warning strip | |
 | `stamp` keyframes | Drops in from 2.2× with a slight rotation | The answer appearing, "Done!" (「完了！」 in Japanese) | Use via `animation: var(--enter) …` so lv1 swaps it for `pop` |
 | `pop` keyframes | Fades up 6px | Secondary content appearing | |

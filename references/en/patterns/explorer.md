@@ -30,6 +30,8 @@ on-call runbooks. If there is no "common mistake" worth showing, omit `bad`; the
 | `cases[].bad` | no | Shown struck through. Say in `note` if these are invented |
 | `cases[].good` | yes | The answer; one sentence |
 | `bad_label`, `good_label` | no | Defaults: "Common mistake", "Do this instead"; 「よくある間違い」「こうする」 when the spec is Japanese (see `lang` in SKILL.en.md) |
+| `cases[].importance` | no | Importance 1-4. A badge (stars and a word) appears next to the situation heading. 4 (Critical, rainbow edge) once per diagram. Default words Low / Medium / High / Critical (低・中・高・最重要 in a Japanese spec) |
+| `cases[].importance_label` | no | Changes the badge word; one or two words. Use with `importance` |
 
 ## Limits
 

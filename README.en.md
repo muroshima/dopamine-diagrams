@@ -27,9 +27,9 @@ Light flows along the edges. Hover a box and only its connections light up (the 
 
 ### explorer: "in situation X, do Y (not Z)"
 
-Pick a situation: the common mistake is struck through and the answer stamps in inside a rainbow border.
+Pick a situation: the common mistake is struck through and the answer stamps in inside a rainbow border. Each situation can carry an importance badge (1-4 stars and a word).
 
-<img src="docs/en/explorer.png" alt="Explorer: a list of HTTP errors on the left; for the selected 409 Conflict, a struck-through mistake and the answer in a rainbow box">
+<img src="docs/en/explorer.png" alt="Explorer: a list of HTTP errors on the left; for the selected 409 Conflict, a two-star importance badge, a struck-through mistake and the answer in a rainbow box">
 
 ### decompose: a vague statement becomes concrete items
 
