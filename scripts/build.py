@@ -785,7 +785,10 @@ def _arch_svg(spec, u, mode, focal):
         t = f'<text class="lb" x="{cx:.1f}" y="{ly:.1f}">{E(n["label"])}</text>'
         if sub:
             t += f'<text class="sb" x="{cx:.1f}" y="{cy+FSS+2:.1f}">{E(sub)}</text>'
-        nodes.append(f'<g class="{cls.strip()}"><rect x="{cx-w/2:.1f}" y="{cy-h/2:.1f}" width="{w:.1f}" height="{h:.1f}" rx="9"{style}/>{t}</g>')
+        # focal: a ring shrinks onto the box once, like a rhythm game approach circle (after the box: checks read the first rect)
+        ring = (f'<rect class="ar-ring" x="{cx-w/2:.1f}" y="{cy-h/2:.1f}" width="{w:.1f}" height="{h:.1f}" rx="9"/>'
+                if nid in focal else "")
+        nodes.append(f'<g class="{cls.strip()}"><rect x="{cx-w/2:.1f}" y="{cy-h/2:.1f}" width="{w:.1f}" height="{h:.1f}" rx="9"{style}/>{t}{ring}</g>')
     defs = (f'<defs><linearGradient id="{gid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff2d55"/>'
             f'<stop offset=".25" stop-color="#ffd700"/><stop offset=".5" stop-color="#22c55e"/>'
             f'<stop offset=".75" stop-color="#3b82f6"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs>')
